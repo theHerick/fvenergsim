@@ -36,96 +36,327 @@
     padding: 28px 20px 8px;
     text-align:center;
   }
-  /* ================= SIMULADOR (NOVO) ================= */
+  /* ================= INTERFACE ESTILO LOGISIM ================= */
   body.sim-light{
     --bg:#f7f7f4;
     --card:#ffffffee;
-    --glass:rgba(255,255,255,0.75);
-    --text:#222831;
-    --muted:#626b7a;
-    --accent:#2d6ae0;
-    --accent-2:#7b4dff;
-    --ok:#129c55;
-    --warn:#b58900;
-    --err:#d93030;
-    background:linear-gradient(160deg,#fafaf8 0%,#f0f2f7 60%,#e7ebf5 100%);
+    --glass:rgba(255,255,255,0.85);
+    --text:#1f2937;
+    --muted:#6b7280;
+    --accent:#2563eb;
+    --accent-2:#7c3aed;
+    --ok:#059669;
+    --warn:#d97706;
+    --err:#dc2626;
+    background:#f8f9fb;
+    color:var(--text);
+    overflow:hidden;
+  }
+  
+  /* Layout principal estilo Logisim */
+  .logisim-layout{
+    display:grid;
+    grid-template-areas:"toolbar toolbar toolbar" "components workspace results";
+    grid-template-rows:60px 1fr;
+    grid-template-columns:280px 1fr 320px;
+    height:100vh;
+    background:#f8f9fb;
+  }
+  
+  /* Toolbar estilo Logisim - mais alta e estruturada */
+  .logisim-toolbar{
+    grid-area:toolbar;
+    background:linear-gradient(180deg,#e5e7eb 0%,#d1d5db 100%);
+    border-bottom:2px solid #9ca3af;
+    padding:8px 16px;
+    display:flex;
+    align-items:center;
+    gap:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  .toolbar-brand{
+    font-size:18px;
+    font-weight:700;
+    color:var(--accent);
+    letter-spacing:.3px;
+  }
+  
+  .toolbar-group{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:0 12px;
+    border-left:1px solid #9ca3af;
+  }
+  
+  .toolbar-group:first-of-type{border-left:none;}
+  
+  .toolbar-btn{
+    background:#fff;
+    border:1px solid #d1d5db;
+    color:var(--text);
+    padding:6px 12px;
+    border-radius:6px;
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition:all .15s;
+    box-shadow:0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .toolbar-btn:hover{
+    background:#f3f4f6;
+    border-color:#9ca3af;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  }
+  
+  .toolbar-btn.active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+  
+  /* Painel de componentes (esquerda) */
+  .components-panel{
+    grid-area:components;
+    background:#fff;
+    border-right:2px solid #e5e7eb;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+  }
+  
+  .components-header{
+    padding:12px 16px;
+    background:#f9fafb;
+    border-bottom:1px solid #e5e7eb;
+    font-weight:600;
+    color:var(--text);
+    font-size:14px;
+  }
+  
+  .component-list{
+    flex:1;
+    padding:8px;
+  }
+  
+  .component-item{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    cursor:pointer;
+    transition:all .15s;
+    position:relative;
+  }
+  
+  .component-item:hover{
+    background:#f8fafc;
+    border-color:#d1d5db;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  }
+  
+  .component-item.selected{
+    background:#eff6ff;
+    border-color:var(--accent);
+    box-shadow:0 0 0 2px rgba(37,99,235,0.2);
+  }
+  
+  .component-title{
+    font-weight:600;
+    font-size:13px;
+    color:var(--text);
+    margin-bottom:4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  
+  .component-info{
+    font-size:11px;
+    color:var(--muted);
+    line-height:1.3;
+  }
+  
+  .component-actions{
+    position:absolute;
+    top:8px;
+    right:8px;
+    display:flex;
+    gap:4px;
+    opacity:0;
+    transition:opacity .15s;
+  }
+  
+  .component-item:hover .component-actions{
+    opacity:1;
+  }
+  
+  .component-action{
+    background:transparent;
+    border:none;
+    color:var(--muted);
+    cursor:pointer;
+    padding:2px 4px;
+    border-radius:4px;
+    font-size:12px;
+  }
+  
+  .component-action:hover{
+    background:rgba(0,0,0,0.05);
     color:var(--text);
   }
-  .sim-toolbar{
-    position:sticky;top:0;z-index:50000;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 18px 10px;background:linear-gradient(90deg,var(--glass),rgba(255,255,255,0.55));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,0.08);
+  
+  /* Área de trabalho central (canvas) */
+  .workspace-area{
+    grid-area:workspace;
+    background:#fefefe;
+    position:relative;
+    overflow:hidden;
   }
-  .sim-toolbar .sim-brand{font-weight:700;font-size:15px;letter-spacing:.5px;color:var(--accent);margin-right:6px;}
-  .sim-toolbar .sim-left{display:flex;align-items:center;gap:10px;}
-  .sim-toolbar .sim-right{display:flex;align-items:center;gap:8px;}
-  .tb-btn{background:var(--card);border:1px solid rgba(0,0,0,0.12);color:var(--text);font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.08);transition:.15s background,.15s box-shadow;position:relative;}
-  .tb-btn:hover{background:rgba(0,0,0,0.05);box-shadow:0 4px 14px -4px rgba(0,0,0,0.18);} 
-  body.sim-light .tb-btn{background:#fff;}
-  .sim-group{position:relative;}
-  .tb-dropdown{position:absolute;top:calc(100% + 6px);left:0;background:var(--card);border:1px solid rgba(0,0,0,0.15);border-radius:10px;padding:6px;display:none;flex-direction:column;min-width:160px;box-shadow:0 12px 34px -8px rgba(0,0,0,0.25);}
-  .tb-dropdown.open{display:flex;}
-  .tb-dropdown button{all:unset;cursor:pointer;padding:8px 10px;border-radius:8px;font-size:13px;color:var(--text);}
-  .tb-dropdown button:hover{background:rgba(0,0,0,0.07);} 
+  
+  .workspace-canvas{
+    width:100%;
+    height:100%;
+    position:relative;
+    background-image:radial-gradient(circle,#e5e7eb 1px,transparent 1px);
+    background-size:20px 20px;
+  }
+  
+  .workspace-component{
+    position:absolute;
+    background:#fff;
+    border:2px solid var(--accent);
+    border-radius:12px;
+    padding:12px 16px;
+    min-width:140px;
+    cursor:move;
+    user-select:none;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    transition:all .2s;
+  }
+  
+  .workspace-component:hover{
+    box-shadow:0 6px 20px rgba(0,0,0,0.2);
+    transform:translateY(-2px);
+  }
+  
+  .workspace-component.selected{
+    border-color:var(--accent-2);
+    box-shadow:0 0 0 3px rgba(124,58,237,0.3);
+  }
+  
+  .workspace-component.carro{
+    border-color:#2563eb;
+    background:linear-gradient(135deg,#eff6ff,#dbeafe);
+  }
+  
+  .workspace-component.placa{
+    border-color:#f59e0b;
+    background:linear-gradient(135deg,#fffbeb,#fef3c7);
+  }
+  
+  .workspace-title{
+    font-weight:700;
+    font-size:14px;
+    margin-bottom:6px;
+    color:var(--text);
+  }
+  
+  .workspace-details{
+    font-size:11px;
+    color:var(--muted);
+    line-height:1.4;
+  }
+  
+  .connection-line{
+    position:absolute;
+    pointer-events:none;
+    stroke:var(--accent);
+    stroke-width:2;
+    fill:none;
+  }
+  
+  /* Painel de resultados (direita) */
+  .results-panel{
+    grid-area:results;
+    background:#fff;
+    border-left:2px solid #e5e7eb;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+  }
+  
+  .results-header{
+    padding:12px 16px;
+    background:#f9fafb;
+    border-bottom:1px solid #e5e7eb;
+    font-weight:600;
+    color:var(--text);
+    font-size:14px;
+  }
+  
+  .results-content{
+    flex:1;
+    padding:16px;
+  }
+  
+  .result-card{
+    background:#f8fafc;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+    padding:12px;
+    margin-bottom:12px;
+  }
+  
+  .result-value{
+    font-size:18px;
+    font-weight:700;
+    color:var(--accent);
+    margin-bottom:4px;
+  }
+  
+  .result-label{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:500;
+  }
+  
+  .result-details{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:6px;
+    padding-top:6px;
+    border-top:1px solid #e5e7eb;
+  }
+  
+  /* Esconder elementos antigos */
+  header, .container, footer, #diagramPanel{
+    display:none !important;
+  }
+  
   .legacy-add{display:none!important;}
-  /* Painel de diagrama */
-  #diagramPanel{position:fixed;top:0;right:0;width:420px;max-width:90vw;height:100dvh;background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.4));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-left:1px solid rgba(0,0,0,0.1);box-shadow:-6px 0 30px -10px rgba(0,0,0,0.3);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.65,.05,.36,1);z-index:60000;}
-  #diagramPanel.open{transform:translateX(0);}
-  #diagramPanel .diag-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;font-weight:600;color:var(--accent);border-bottom:1px solid rgba(0,0,0,0.08);}
-  #diagramPanel button.close-diag{background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--err);padding:4px 6px;border-radius:8px;}
-  #diagramPanel button.close-diag:hover{background:rgba(0,0,0,0.07);} 
-  #diagramCanvas{flex:1;overflow:auto;padding:18px 18px 40px;font-size:12px;}
-  .node-box{--c:var(--accent);border:1px solid var(--c);border-radius:10px;padding:8px 10px;margin:4px;min-width:120px;background:linear-gradient(135deg,var(--card),rgba(255,255,255,0.5));box-shadow:0 4px 12px -4px rgba(0,0,0,0.25);position:relative;}
-  .node-box.placa{--c:#f59e0b;}
-  .node-box.carro{--c:#2563eb;}
-  .node-box .mini{font-size:10px;opacity:.75;margin-top:2px;}
-  .diagram-grid{display:grid;grid-template-columns:1fr;gap:14px;}
-  .diag-cluster{display:flex;flex-wrap:wrap;align-items:flex-start;}
-  .diag-section-title{font-size:11px;font-weight:700;letter-spacing:.5px;margin:2px 4px 4px;color:var(--muted);text-transform:uppercase;}
-  .diag-connector{height:2px;background:linear-gradient(90deg,var(--accent),var(--accent-2));margin:4px 0 10px;border-radius:2px;}
-  .diagram-empty{font-size:12px;color:var(--muted);padding:10px 4px;}
-  @media (max-width:800px){#diagramPanel{width:360px;}}
+  
+  /* Responsivo básico */
+  @media (max-width: 1200px) {
+    .logisim-layout {
+      grid-template-columns: 260px 1fr 280px;
+    }
+  }
+  
+  @media (max-width: 980px) {
+    .logisim-layout {
+      grid-template-areas: "toolbar toolbar" "workspace workspace" "components results";
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 60px 1fr 300px;
+    }
+  }
   /* ===================================================== */
-  /* ======= LOGISIM STYLE WORKBENCH (NOVO) ======= */
-  #workbench{position:relative;display:flex;height:calc(100vh - 78px);width:100%;max-width:100%;overflow:hidden;margin:0 auto;}
-  .wb-left{width:240px;min-width:200px;background:linear-gradient(180deg,var(--glass),transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-right:1px solid rgba(0,0,0,0.08);padding:14px 12px 18px;display:flex;flex-direction:column;gap:14px;overflow:auto;}
-  .wb-center{flex:1;position:relative;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.04) 0 22px,rgba(255,255,255,0.08) 22px 44px),radial-gradient(circle at 50% 50%,rgba(255,255,255,0.06),transparent 70%);border-right:1px solid rgba(0,0,0,0.08);}
-  .wb-right{width:340px;min-width:300px;background:linear-gradient(180deg,var(--glass),transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:14px 14px 24px;overflow:auto;display:flex;flex-direction:column;}
-  .wb-title{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin:0 0 4px 4px;}
-  .comp-item{background:var(--card);border:1px solid rgba(0,0,0,0.12);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;font-size:12px;cursor:pointer;position:relative;box-shadow:0 2px 8px -3px rgba(0,0,0,0.25);}
-  .comp-item:hover{border-color:var(--accent);}
-  .comp-item span{font-size:11px;opacity:.75;}
-  .comp-head{display:flex;align-items:center;justify-content:space-between;font-weight:600;color:var(--accent);font-size:12px;}
-  .comp-actions{display:flex;gap:6px;margin-top:2px;}
-  .comp-actions button{background:transparent;border:1px solid rgba(0,0,0,0.2);color:var(--text);padding:4px 8px;font-size:10px;border-radius:6px;cursor:pointer;}
-  .comp-actions button:hover{background:rgba(0,0,0,0.1);} 
-  #simCanvas{width:100%;height:100%;display:block;cursor:grab;}
-  .node{transition:filter .15s;}
-  .node rect{fill:var(--card);stroke:var(--accent);stroke-width:1.5px;rx:10;ry:10;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));}
-  .node.placa rect{stroke:#f59e0b;}
-  .node.carro rect{stroke:#2563eb;}
-  .node text{font-size:11px;font-family:ui-sans-serif,Arial;fill:var(--text);pointer-events:none;}
-  .node.dragging rect{stroke-dasharray:4 3;}
-  .bus-line{stroke:var(--accent-2);stroke-width:4;stroke-linecap:round;opacity:.55;}
-  .wire{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 4;opacity:.8;fill:none;}
-  .legend-box{position:absolute;bottom:10px;left:10px;background:var(--card);border:1px solid rgba(0,0,0,0.15);padding:6px 10px;border-radius:10px;font-size:10px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
-  .legend-box b{font-size:10px;}
-  @media (max-width:1200px){ .wb-right{display:none;} #workbench{height:calc(100vh - 128px);} }
-  @media (max-width:900px){ .wb-left{width:180px;} }
-  @media (max-width:760px){ .wb-left{display:none;} }
-  body.wb-full .container{display:none!important;}
-  body.wb-full #workbench{display:flex;}
-  /* Large toolbar tweak */
-  .sim-toolbar.large{padding:14px 22px 16px;gap:24px;font-size:16px;}
-  .sim-toolbar.large .tb-btn{padding:12px 20px;font-size:14px;border-radius:14px;}
-  .sim-toolbar.large .sim-brand{font-size:20px;}
-  /* Modal editor */
-  #editorModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:90000;}
-  #editorModal.open{display:flex;}
-  #editorBox{width:min(640px,92vw);max-height:80vh;overflow:auto;background:var(--card);border:1px solid rgba(0,0,0,0.2);border-radius:20px;padding:24px 24px 30px;box-shadow:0 18px 60px -8px rgba(0,0,0,0.55);}
-  #editorBox h3{margin:0 0 12px;font-size:20px;color:var(--accent);}
-  #editorClose{position:absolute;top:8px;right:12px;background:transparent;border:none;color:var(--err);font-size:28px;cursor:pointer;}
-  .editor-fields .grid{grid-template-columns:1fr 1fr;}
-  @media (max-width:640px){ .editor-fields .grid{grid-template-columns:1fr;} }
-  /* =========================================== */
   h1{
     margin:0;
     font-size: clamp(28px, 4vw, 40px);
@@ -385,43 +616,123 @@
   }
 </style>
 </head>
-<body>
-  <!-- Toolbar estilo simulador -->
-  <div class="sim-toolbar" id="simToolbar">
-    <div class="sim-left">
-      <span class="sim-brand">EV Solar Sim</span>
-      <div class="sim-group">
-        <button class="tb-btn" id="addMenuBtn">➕ Adicionar</button>
-        <div class="tb-dropdown" id="addDropdown">
-          <button type="button" data-add="carro">Carro</button>
-          <button type="button" data-add="placa">Placa (Array FV)</button>
+<body class="sim-light">
+  <!-- Interface estilo Logisim -->
+  <div class="logisim-layout">
+    <!-- Toolbar superior -->
+    <div class="logisim-toolbar">
+      <div class="toolbar-brand">⚡ EV Solar Simulator</div>
+      
+      <div class="toolbar-group">
+        <button class="toolbar-btn" id="addCarroBtn">
+          🚗 Adicionar Carro
+        </button>
+        <button class="toolbar-btn" id="addPlacaBtn">
+          ☀️ Adicionar Placa
+        </button>
+      </div>
+      
+      <div class="toolbar-group">
+        <button class="toolbar-btn" id="calcularBtn">
+          ⚙️ Calcular
+        </button>
+        <button class="toolbar-btn" id="limparBtn">
+          🧹 Limpar
+        </button>
+      </div>
+      
+      <div class="toolbar-group">
+        <button class="toolbar-btn" id="exportarBtn">
+          📤 Exportar
+        </button>
+        <button class="toolbar-btn" id="importarBtn">
+          📥 Importar
+        </button>
+      </div>
+      
+      <div class="toolbar-group" style="margin-left:auto;">
+        <button class="toolbar-btn" id="configBtn">
+          ⚙️ Configurações
+        </button>
+        <button class="toolbar-btn" id="helpBtn">
+          ❓ Ajuda
+        </button>
+      </div>
+    </div>
+    
+    <!-- Painel de componentes (esquerda) -->
+    <div class="components-panel">
+      <div class="components-header">Componentes do Sistema</div>
+      <div class="component-list" id="componentList">
+        <!-- Componentes serão inseridos aqui via JS -->
+      </div>
+      <div style="padding:12px;border-top:1px solid #e5e7eb;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Configurações Globais:</div>
+        <div style="margin-bottom:6px;">
+          <label style="font-size:11px;color:var(--muted);">Pontos de carga simultâneos</label>
+          <input id="numChargers" type="number" min="1" value="1" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;">
+        </div>
+        <div style="margin-bottom:6px;">
+          <label style="font-size:11px;color:var(--muted);">Fator taper (≥80% SOC)</label>
+          <input id="taperFactorInput" type="number" min="0.1" max="1" step="0.05" value="0.55" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);">Tarifa (R$/kWh)</label>
+          <input id="tarifaInput" type="number" min="0" step="0.01" value="0.95" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;">
         </div>
       </div>
-      <button class="tb-btn" id="toggleDiagramBtn" title="Mostrar/ocultar diagrama">🗂️ Diagrama</button>
-      <button class="tb-btn" id="quickCalcBtn" title="Recalcular (Ctrl+R)">⚙️ Calcular</button>
-      <button class="tb-btn" id="quickClearBtn" title="Limpar tudo">🧹 Limpar</button>
     </div>
-    <div class="sim-right">
-      <button class="tb-btn" id="themeToggleBtn" title="Alternar tema">🌗 Tema</button>
-      <button class="tb-btn" id="openSaveModalBtn_clone" title="Salvar / Modelos">💾 Salvar</button>
-      <div class="sim-group">
-        <button class="tb-btn" id="exportMenuBtn">📤 Exportar</button>
-        <div class="tb-dropdown" id="exportDropdown">
-          <button type="button" id="exportJsonToolbar">Exportar JSON</button>
-          <button type="button" id="importJsonToolbar">Importar JSON</button>
+    
+    <!-- Área de trabalho central -->
+    <div class="workspace-area">
+      <div class="workspace-canvas" id="workspaceCanvas">
+        <!-- Componentes gráficos serão inseridos aqui -->
+      </div>
+    </div>
+    
+    <!-- Painel de resultados (direita) -->
+    <div class="results-panel">
+      <div class="results-header">Resultados da Simulação</div>
+      <div class="results-content" id="resultsContent">
+        <div class="result-card">
+          <div class="result-value" id="resultEbat">— kWh</div>
+          <div class="result-label">Energia para bateria</div>
+          <div class="result-details">Energia útil que entra na bateria (ΔSOC)</div>
+        </div>
+        
+        <div class="result-card">
+          <div class="result-value" id="resultEpv">— kWh</div>
+          <div class="result-label">Energia FV necessária</div>
+          <div class="result-details">Energia bruta considerando perdas</div>
+        </div>
+        
+        <div class="result-card">
+          <div class="result-value" id="resultEdia">— kWh/dia</div>
+          <div class="result-label">Geração diária</div>
+          <div class="result-details">kWp × PSH × PR médio</div>
+        </div>
+        
+        <div class="result-card">
+          <div class="result-value" id="resultDias">— dias</div>
+          <div class="result-label">Tempo para gerar</div>
+          <div class="result-details">Dias de geração para acumular energia</div>
+        </div>
+        
+        <div class="result-card">
+          <div class="result-value" id="resultSaldo">— kWh</div>
+          <div class="result-label">Saldo diário</div>
+          <div class="result-details" id="saldoDetails">Excedente ou déficit</div>
+        </div>
+        
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb;">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;">Status do Sistema</div>
+          <div id="systemStatus" style="font-size:11px;color:var(--muted);line-height:1.4;">
+            Adicione componentes para simular
+          </div>
         </div>
       </div>
     </div>
   </div>
-  <!-- Painel lateral de diagrama -->
-  <div id="diagramPanel" aria-hidden="true">
-    <div class="diag-head">Diagrama do Sistema <button class="close-diag" id="closeDiagramBtn" title="Fechar">×</button></div>
-    <div id="diagramCanvas"></div>
-  </div>
-  <header>
-    <h1>Calculadora Solar &nbsp;→&nbsp; Carro Elétrico</h1>
-    <div class="subtitle">Descubra quanta energia seu sistema fotovoltaico precisa gerar e o tempo para carregar seu EV.</div>
-  </header>
 
   <div class="container">
     <!-- Entrada -->
@@ -430,46 +741,6 @@
   <div id="carrosContainer"></div>
   <div style="display:flex; gap:8px; margin:6px 2px 14px; flex-wrap:wrap;">
     <button type="button" class="secondary" style="padding:8px 14px;font-size:12px;" onclick="adicionarCarro()">+ Adicionar Carro</button>
-  </div>
-
-  <!-- ================== NOVO WORKBENCH LOGISIM STYLE ================== -->
-  <div id="workbench" style="display:none;">
-    <div class="wb-left">
-      <div class="wb-title">Componentes</div>
-      <div id="wbCompList" style="display:flex;flex-direction:column;gap:10px;"></div>
-      <div class="wb-title" style="margin-top:8px;">Ações</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <button class="tb-btn" id="wbAddCarBtn" style="width:100%;">+ Carro</button>
-        <button class="tb-btn" id="wbAddPlacaBtn" style="width:100%;">+ Placa</button>
-        <button class="tb-btn" id="wbEditSelBtn" style="width:100%;">✎ Editar Selecionado</button>
-        <button class="tb-btn" id="wbRemoveSelBtn" style="width:100%;">− Remover Selecionado</button>
-        <button class="tb-btn" id="wbSyncBtn" style="width:100%;">↺ Sincronizar</button>
-      </div>
-    </div>
-    <div class="wb-center" id="wbCanvasWrap">
-      <svg id="simCanvas"></svg>
-      <div class="legend-box" id="wbLegend"></div>
-    </div>
-    <div class="wb-right">
-      <div class="wb-title">Resultados</div>
-      <div id="wbResults" style="display:flex;flex-direction:column;gap:12px;font-size:12px;"></div>
-      <div class="wb-title" style="margin-top:10px;">Resumo PV</div>
-      <div id="wbPvResumo" style="font-size:11px;line-height:1.3;color:var(--muted);"></div>
-      <div class="wb-title" style="margin-top:10px;">Passos</div>
-      <div id="wbCalcPassos" style="font-size:10.5px;line-height:1.3;max-height:240px;overflow:auto;background:var(--card);border:1px solid rgba(0,0,0,0.15);padding:8px 10px;border-radius:10px;"></div>
-    </div>
-  </div>
-  <!-- Modal de edição simplificada -->
-  <div id="editorModal">
-    <div id="editorBox">
-      <button id="editorClose">×</button>
-      <h3 id="editorTitle">Editar</h3>
-      <div class="editor-fields" id="editorFields"></div>
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
-        <button class="tb-btn" id="editorSaveBtn">Salvar</button>
-        <button class="tb-btn" id="editorCancelBtn" style="background:transparent;border:1px solid rgba(0,0,0,0.25);">Cancelar</button>
-      </div>
-    </div>
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:14px;margin:10px 4px 22px;align-items:flex-start;">
     <div style="flex:1;min-width:180px;display:flex;flex-direction:column;">
@@ -1561,7 +1832,7 @@ function calcular(){
   // Cálculos totais
   const E_dia = kWp_total * psh_total * eff_total; // usa PR * eta adicional
   const E_dia_final = (genMode==='curve' && curveEnergyDay!=null) ? curveEnergyDay : E_dia;
-  const dias = (E_dia > 0) ? (E_pv_total / E_dia) : Infinity;
+  const dias = (E_dia_final > 0) ? (E_pv_total / E_dia_final) : Infinity;
   const horasSol = (kWp_total*eff_total > 0) ? (E_pv_total / (kWp_total * eff_total)) : Infinity;
   const P_pico_FV = kWp_total * eff_total;
   const P_lim = Math.max(0, Math.min(onboardKW_total || Infinity, P_pico_FV || Infinity));
@@ -2100,290 +2371,402 @@ document.getElementById('pvCurveBtnParse')?.addEventListener('click',()=>{
 handlePvGenMode();
 updateCurveSummary();
 
-// ===================== NOVA LÓGICA SIMULADOR =====================
-(function(){
-  const body=document.body;
-  const ddAdd=document.getElementById('addDropdown');
-  const addBtn=document.getElementById('addMenuBtn');
-  const diagBtn=document.getElementById('toggleDiagramBtn');
-  const diagPanel=document.getElementById('diagramPanel');
-  const closeDiag=document.getElementById('closeDiagramBtn');
-  const calcFast=document.getElementById('quickCalcBtn');
-  const clearFast=document.getElementById('quickClearBtn');
-  const themeBtn=document.getElementById('themeToggleBtn');
-  const exportBtn=document.getElementById('exportMenuBtn');
-  const exportDD=document.getElementById('exportDropdown');
-  const exportJsonToolbar=document.getElementById('exportJsonToolbar');
-  const importJsonToolbar=document.getElementById('importJsonToolbar');
-  const openSaveClone=document.getElementById('openSaveModalBtn_clone');
-  const openSaveOriginal=document.getElementById('openSaveModalBtn');
+// ===================== INTERFACE LOGISIM =====================
+let selectedComponent = null;
+let draggedComponent = null;
+let workspaceComponents = [];
 
-  if(openSaveClone && openSaveOriginal){
-    openSaveClone.addEventListener('click',()=>openSaveOriginal.click());
-  }
-
-  function toggle(el){ el.classList.toggle('open'); }
-  function hide(el){ el && el.classList.remove('open'); }
-  if(addBtn){
-    addBtn.addEventListener('click',(e)=>{ e.stopPropagation(); toggle(ddAdd); hide(exportDD); });
-  }
-  if(exportBtn){
-    exportBtn.addEventListener('click',(e)=>{ e.stopPropagation(); toggle(exportDD); hide(ddAdd); });
-  }
-  document.addEventListener('click',()=>{ hide(ddAdd); hide(exportDD); });
-  ddAdd?.addEventListener('click',e=>{
-    if(e.target.matches('button[data-add]')){
-      const t=e.target.getAttribute('data-add');
-      if(t==='carro') adicionarCarro(); else if(t==='placa') adicionarPlaca();
-      hide(ddAdd); renderDiagram(); showToast((t==='carro'?'Carro':'Placa')+' adicionad'+(t==='carro'?'o':'a'),'ok',1800);
+// Inicialização da interface
+function initLogisimInterface(){
+  const body = document.body;
+  body.classList.add('sim-light');
+  
+  // Event listeners da toolbar
+  document.getElementById('addCarroBtn')?.addEventListener('click', () => {
+    adicionarCarro();
+    updateComponentList();
+    updateWorkspace();
+    showToast('Carro adicionado', 'ok', 1500);
+  });
+  
+  document.getElementById('addPlacaBtn')?.addEventListener('click', () => {
+    adicionarPlaca();
+    updateComponentList();
+    updateWorkspace();
+    showToast('Placa adicionada', 'ok', 1500);
+  });
+  
+  document.getElementById('calcularBtn')?.addEventListener('click', () => {
+    if(validarCampos()) {
+      calcular();
+      updateResults();
+      showToast('Calculado', 'ok', 1500);
     }
   });
-  if(calcFast) calcFast.addEventListener('click',()=>{ if(validarCampos()) { calcular(); renderDiagram(); showToast('Recalculado','ok',1500);} });
-  if(clearFast) clearFast.addEventListener('click',()=>{ if(confirm('Limpar todos os dados?')){ limpar(); renderDiagram(); showToast('Limpou','warn',1500);} });
-  if(themeBtn){
-    themeBtn.addEventListener('click',()=>{
-      body.classList.toggle('sim-light');
-      localStorage.setItem('simTheme', body.classList.contains('sim-light')?'light':'dark');
-      renderDiagram();
-    });
-    // carregar preferencia
-    const pref = localStorage.getItem('simTheme');
-    if(pref==='light') body.classList.add('sim-light');
-  }
-  function openDiagram(){ diagPanel.classList.add('open'); diagPanel.setAttribute('aria-hidden','false'); renderDiagram(); }
-  function closeDiagram(){ diagPanel.classList.remove('open'); diagPanel.setAttribute('aria-hidden','true'); }
-  if(diagBtn) diagBtn.addEventListener('click',()=>{ diagPanel.classList.contains('open')?closeDiagram():openDiagram(); });
-  if(closeDiag) closeDiag.addEventListener('click',closeDiagram);
-  document.addEventListener('keydown',e=>{
-    if(e.key==='Escape' && diagPanel.classList.contains('open')) closeDiagram();
-    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='r'){ e.preventDefault(); if(validarCampos()) { calcular(); renderDiagram(); showToast('Recalculado','ok',1200);} }
+  
+  document.getElementById('limparBtn')?.addEventListener('click', () => {
+    if(confirm('Limpar todos os componentes?')) {
+      limpar();
+      updateComponentList();
+      updateWorkspace();
+      updateResults();
+      showToast('Limpou', 'warn', 1500);
+    }
   });
-  if(exportJsonToolbar) exportJsonToolbar.addEventListener('click',()=>{ exportarJSON(); hide(exportDD); });
-  if(importJsonToolbar) importJsonToolbar.addEventListener('click',()=>{ document.getElementById('importFile').click(); hide(exportDD); });
+  
+  document.getElementById('exportarBtn')?.addEventListener('click', () => {
+    exportarJSON();
+  });
+  
+  document.getElementById('importarBtn')?.addEventListener('click', () => {
+    document.getElementById('importFile')?.click();
+  });
+  
+  // Inicializar workspace
+  initWorkspace();
+  updateComponentList();
+  updateWorkspace();
+  updateResults();
+}
 
-  // ------- Diagrama -------
-  const canvas=document.getElementById('diagramCanvas');
-  function el(tag, cls, html){ const d=document.createElement(tag); if(cls) d.className=cls; if(html!=null) d.innerHTML=html; return d; }
-  function buildNode(tipo, titulo, linhas){
-    const box=el('div','node-box '+tipo);
-    box.innerHTML = `<strong>${titulo||tipo}</strong>` + linhas.map(l=>`<div class="mini">${l}</div>`).join('');
-    return box;
+// Atualizar lista de componentes
+function updateComponentList(){
+  const list = document.getElementById('componentList');
+  if(!list) return;
+  
+  list.innerHTML = '';
+  
+  // Adicionar carros
+  carros.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'component-item';
+    item.setAttribute('data-type', 'carro');
+    item.setAttribute('data-id', c.id);
+    
+    const nome = document.getElementById('carroNome'+c.id)?.value || `Carro ${c.id+1}`;
+    const cap = num(document.getElementById('capNominal'+c.id)?.value, c.capNominal || 60);
+    const onboard = num(document.getElementById('onboardKW'+c.id)?.value, c.onboardKW || 7.4);
+    
+    item.innerHTML = `
+      <div class="component-title">
+        🚗 ${nome}
+      </div>
+      <div class="component-info">
+        Bateria: ${cap.toFixed(1)} kWh<br>
+        Carregador: ${onboard} kW
+      </div>
+      <div class="component-actions">
+        <button class="component-action" onclick="editComponent('carro', ${c.id})">✏️</button>
+        <button class="component-action" onclick="removeComponent('carro', ${c.id})">🗑️</button>
+      </div>
+    `;
+    
+    item.addEventListener('click', () => selectComponent('carro', c.id));
+    list.appendChild(item);
+  });
+  
+  // Adicionar placas
+  placas.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'component-item';
+    item.setAttribute('data-type', 'placa');
+    item.setAttribute('data-id', p.id);
+    
+    const nome = document.getElementById('placaNome'+p.id)?.value || `Placa ${p.id+1}`;
+    const kWp = num(document.getElementById('kWp'+p.id)?.value, p.kWp || 2.0);
+    const pr = num(document.getElementById('pr'+p.id)?.value, (p.pr || 0.75) * 100);
+    
+    item.innerHTML = `
+      <div class="component-title">
+        ☀️ ${nome}
+      </div>
+      <div class="component-info">
+        Potência: ${kWp.toFixed(2)} kWp<br>
+        PR: ${pr.toFixed(0)}%
+      </div>
+      <div class="component-actions">
+        <button class="component-action" onclick="editComponent('placa', ${p.id})">✏️</button>
+        <button class="component-action" onclick="removeComponent('placa', ${p.id})">🗑️</button>
+      </div>
+    `;
+    
+    item.addEventListener('click', () => selectComponent('placa', p.id));
+    list.appendChild(item);
+  });
+}
+
+// Selecionar componente
+function selectComponent(type, id){
+  // Remover seleção anterior
+  document.querySelectorAll('.component-item.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+  document.querySelectorAll('.workspace-component.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+  
+  // Selecionar novo
+  const listItem = document.querySelector(`[data-type="${type}"][data-id="${id}"]`);
+  const workspaceItem = document.querySelector(`#workspace-${type}-${id}`);
+  
+  if(listItem) listItem.classList.add('selected');
+  if(workspaceItem) workspaceItem.classList.add('selected');
+  
+  selectedComponent = {type, id};
+}
+
+// Remover componente
+function removeComponent(type, id){
+  if(type === 'carro') {
+    removerCarro(id);
+  } else if(type === 'placa') {
+    removerPlaca(id);
   }
-  function renderDiagram(){
-    if(!canvas) return;
-    canvas.innerHTML='';
-    if(!carros.length && !placas.length){ canvas.innerHTML='<div class="diagram-empty">Nada para mostrar ainda...</div>'; return; }
-    const grid=el('div','diagram-grid');
-    // Placas
-    const secPlacas=el('div');
-    secPlacas.appendChild(el('div','diag-section-title','Arrays Fotovoltaicos'));
-    const clusterPl=el('div','diag-cluster');
-    placas.forEach(p=>{
-      const kWp=num(document.getElementById('kWp'+p.id)?.value,p.kWp||0);
-      const prVal=num(document.getElementById('pr'+p.id)?.value,(p.pr||0)*100);
-      const psh=num(document.getElementById('psh'+p.id)?.value,p.psh||0);
-      const eta=num(document.getElementById('etaArr'+p.id)?.value,(p.etaArr||1)*100);
-      const nome=document.getElementById('placaNome'+p.id)?.value||('Placa '+(p.id+1));
-      const lines=[`kWp: ${kWp.toFixed(2)}`,`PR: ${prVal.toFixed(0)}%`, `η: ${eta.toFixed(0)}%`, `PSH: ${psh.toFixed(2)}h`];
-      clusterPl.appendChild(buildNode('placa',nome,lines));
-    });
-    secPlacas.appendChild(clusterPl); grid.appendChild(secPlacas);
-    // Conector
-    grid.appendChild(el('div','diag-connector'));
-    // Carros
-    const secCarros=el('div'); secCarros.appendChild(el('div','diag-section-title','Carros Elétricos'));
-    const clusterCar=el('div','diag-cluster');
-    carros.forEach(c=>{
-      const nome=document.getElementById('carroNome'+c.id)?.value||('Carro '+(c.id+1));
-      const cap=num(document.getElementById('capNominal'+c.id)?.value,c.capNominal||0);
-      const perc=num(document.getElementById('percUtil'+c.id)?.value,(c.percUtil||0.95)*100);
-      const socIni=num(document.getElementById('socIni'+c.id)?.value,c.socIni||0);
-      const socFim=num(document.getElementById('socFim'+c.id)?.value,c.socFim||100);
-      const onboard=num(document.getElementById('onboardKW'+c.id)?.value,c.onboardKW||0);
-      const lines=[`Cap: ${cap.toFixed(1)} kWh`,`Utiliz.: ${perc.toFixed(0)}%`,`SOC: ${socIni.toFixed(0)}→${socFim.toFixed(0)}%`,`Onboard: ${onboard} kW`];
-      clusterCar.appendChild(buildNode('carro',nome,lines));
-    });
-    secCarros.appendChild(clusterCar); grid.appendChild(secCarros);
-    canvas.appendChild(grid);
+  updateComponentList();
+  updateWorkspace();
+  updateResults();
+}
+
+// Editar componente (modal simples)
+function editComponent(type, id){
+  // Por enquanto, apenas seleciona - pode ser expandido para modal de edição
+  selectComponent(type, id);
+  showToast(`Editando ${type} ${id+1}`, 'ok', 1500);
+}
+
+// Inicializar workspace
+function initWorkspace(){
+  const canvas = document.getElementById('workspaceCanvas');
+  if(!canvas) return;
+  
+  // Drag and drop básico
+  canvas.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+  
+  canvas.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if(draggedComponent) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      updateComponentPosition(draggedComponent.type, draggedComponent.id, x, y);
+      draggedComponent = null;
+    }
+  });
+}
+
+// Atualizar workspace
+function updateWorkspace(){
+  const canvas = document.getElementById('workspaceCanvas');
+  if(!canvas) return;
+  
+  // Limpar workspace atual
+  canvas.querySelectorAll('.workspace-component').forEach(el => el.remove());
+  
+  // Adicionar carros
+  carros.forEach((c, index) => {
+    const nome = document.getElementById('carroNome'+c.id)?.value || `Carro ${c.id+1}`;
+    const cap = num(document.getElementById('capNominal'+c.id)?.value, c.capNominal || 60);
+    const onboard = num(document.getElementById('onboardKW'+c.id)?.value, c.onboardKW || 7.4);
+    
+    const component = createWorkspaceComponent('carro', c.id, nome, [
+      `${cap.toFixed(1)} kWh`,
+      `${onboard} kW onboard`
+    ]);
+    
+    // Posição inicial
+    component.style.left = (50 + index * 180) + 'px';
+    component.style.top = (300 + index * 20) + 'px';
+    
+    canvas.appendChild(component);
+  });
+  
+  // Adicionar placas
+  placas.forEach((p, index) => {
+    const nome = document.getElementById('placaNome'+p.id)?.value || `Placa ${p.id+1}`;
+    const kWp = num(document.getElementById('kWp'+p.id)?.value, p.kWp || 2.0);
+    const pr = num(document.getElementById('pr'+p.id)?.value, (p.pr || 0.75) * 100);
+    
+    const component = createWorkspaceComponent('placa', p.id, nome, [
+      `${kWp.toFixed(2)} kWp`,
+      `PR: ${pr.toFixed(0)}%`
+    ]);
+    
+    // Posição inicial
+    component.style.left = (50 + index * 180) + 'px';
+    component.style.top = (80 + index * 20) + 'px';
+    
+    canvas.appendChild(component);
+  });
+  
+  // Desenhar conexões
+  drawConnections();
+}
+
+// Criar componente no workspace
+function createWorkspaceComponent(type, id, title, details){
+  const component = document.createElement('div');
+  component.className = `workspace-component ${type}`;
+  component.id = `workspace-${type}-${id}`;
+  component.draggable = true;
+  
+  component.innerHTML = `
+    <div class="workspace-title">${title}</div>
+    <div class="workspace-details">${details.join('<br>')}</div>
+  `;
+  
+  // Eventos de drag
+  component.addEventListener('dragstart', (e) => {
+    draggedComponent = {type, id};
+    component.style.opacity = '0.5';
+  });
+  
+  component.addEventListener('dragend', () => {
+    component.style.opacity = '1';
+  });
+  
+  // Clique para selecionar
+  component.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectComponent(type, id);
+  });
+  
+  return component;
+}
+
+// Atualizar posição do componente
+function updateComponentPosition(type, id, x, y){
+  const component = document.getElementById(`workspace-${type}-${id}`);
+  if(component) {
+    component.style.left = Math.max(0, x - 70) + 'px';
+    component.style.top = Math.max(0, y - 30) + 'px';
+    drawConnections();
   }
-  // Re-render após cálculos automáticos
-  const observer = new MutationObserver((m)=>{ if(diagPanel.classList.contains('open')) renderDiagram(); });
-  observer.observe(document.body,{subtree:true,characterData:false,childList:false,attributes:false});
-  // Primeira render
-  renderDiagram();
-})();
+}
+
+// Desenhar conexões entre componentes
+function drawConnections(){
+  // Remove conexões existentes
+  document.querySelectorAll('.connection-line').forEach(el => el.remove());
+  
+  const canvas = document.getElementById('workspaceCanvas');
+  if(!canvas) return;
+  
+  // Criar SVG para as linhas
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.style.position = 'absolute';
+  svg.style.top = '0';
+  svg.style.left = '0';
+  svg.style.width = '100%';
+  svg.style.height = '100%';
+  svg.style.pointerEvents = 'none';
+  svg.style.zIndex = '1';
+  
+  // Conectar placas aos carros (exemplo simples)
+  const placaElements = canvas.querySelectorAll('.workspace-component.placa');
+  const carroElements = canvas.querySelectorAll('.workspace-component.carro');
+  
+  if(placaElements.length > 0 && carroElements.length > 0) {
+    placaElements.forEach(placa => {
+      carroElements.forEach(carro => {
+        const placaRect = placa.getBoundingClientRect();
+        const carroRect = carro.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        
+        const x1 = placaRect.left + placaRect.width/2 - canvasRect.left;
+        const y1 = placaRect.bottom - canvasRect.top;
+        const x2 = carroRect.left + carroRect.width/2 - canvasRect.left;
+        const y2 = carroRect.top - canvasRect.top;
+        
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        line.setAttribute('d', `M ${x1} ${y1} Q ${(x1+x2)/2} ${(y1+y2)/2} ${x2} ${y2}`);
+        line.setAttribute('stroke', '#2563eb');
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('fill', 'none');
+        line.className = 'connection-line';
+        
+        svg.appendChild(line);
+      });
+    });
+  }
+  
+  canvas.appendChild(svg);
+}
+
+// Atualizar resultados
+function updateResults(){
+  // Usar dados do cálculo existente
+  const ebat = document.getElementById('kpiEbat')?.textContent || '— kWh';
+  const epv = document.getElementById('kpiEpv')?.textContent || '— kWh';
+  const edia = document.getElementById('kpiEdia')?.textContent || '— kWh';
+  const dias = document.getElementById('kpiDias')?.textContent || '— dias';
+  const saldo = document.getElementById('kpiDeficit')?.textContent || '— kWh';
+  
+  document.getElementById('resultEbat').textContent = ebat;
+  document.getElementById('resultEpv').textContent = epv;
+  document.getElementById('resultEdia').textContent = edia;
+  document.getElementById('resultDias').textContent = dias;
+  document.getElementById('resultSaldo').textContent = saldo;
+  
+  // Status do sistema
+  const status = document.getElementById('systemStatus');
+  if(status) {
+    if(carros.length === 0 && placas.length === 0) {
+      status.textContent = 'Adicione componentes para simular';
+    } else {
+      status.innerHTML = `
+        Sistema: ${carros.length} carro(s) + ${placas.length} placa(s)<br>
+        Última atualização: ${new Date().toLocaleTimeString()}
+      `;
+    }
+  }
+}
+
+// Clique fora para desselecionar
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('.component-item') && !e.target.closest('.workspace-component')) {
+    document.querySelectorAll('.component-item.selected').forEach(el => {
+      el.classList.remove('selected');
+    });
+    document.querySelectorAll('.workspace-component.selected').forEach(el => {
+      el.classList.remove('selected');
+    });
+    selectedComponent = null;
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Delete' && selectedComponent) {
+    removeComponent(selectedComponent.type, selectedComponent.id);
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+    e.preventDefault();
+    document.getElementById('calcularBtn')?.click();
+  }
+});
+
+// Override das funções existentes para integrar com nova interface
+const originalRenderCarros = renderCarros;
+const originalRenderPlacas = renderPlacas;
+
+renderCarros = function(skipHarvest = false) {
+  originalRenderCarros(skipHarvest);
+  updateComponentList();
+  updateWorkspace();
+};
+
+renderPlacas = function(skipHarvest = false) {
+  originalRenderPlacas(skipHarvest);
+  updateComponentList();
+  updateWorkspace();
+};
+
+// Inicializar
+initLogisimInterface();
 // ===============================================================
-(function(){
-  // ===== Workbench Activation Toggle (reuse theme button long press or add key) =====
-  const body=document.body;
-  let wbMode = false;
-  function enterWorkbench(){ wbMode=true; body.classList.add('wb-full'); document.getElementById('workbench').style.display='flex'; document.querySelector('.sim-toolbar')?.classList.add('large'); renderWbAll(); }
-  function exitWorkbench(){ wbMode=false; body.classList.remove('wb-full'); document.getElementById('workbench').style.display='none'; document.querySelector('.sim-toolbar')?.classList.remove('large'); }
-  // Shortcut: Ctrl+Shift+W toggles
-  document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='w'){ e.preventDefault(); wbMode?exitWorkbench():enterWorkbench(); } });
-  // Long press brand to toggle
-  const brand=document.querySelector('.sim-brand');
-  if(brand){
-    let pressTimer=null;
-    brand.addEventListener('mousedown',()=>{ pressTimer=setTimeout(()=>{ wbMode?exitWorkbench():enterWorkbench(); },700); });
-    ['mouseup','mouseleave'].forEach(ev=>brand.addEventListener(ev,()=>{ if(pressTimer) clearTimeout(pressTimer); }));
-  }
-
-  // Data structures for node positions
-  const nodeState = { carros:{}, placas:{} };
-  function ensureNodeState(){ carros.forEach(c=>{ if(!nodeState.carros[c.id]) nodeState.carros[c.id]={x:120+ c.id*40, y:120 + c.id*40}; }); placas.forEach(p=>{ if(!nodeState.placas[p.id]) nodeState.placas[p.id]={x:520+ p.id*40, y:120 + p.id*40}; }); }
-
-  // Component list
-  function renderCompList(){
-    ensureNodeState();
-    const list=document.getElementById('wbCompList'); if(!list) return;
-    list.innerHTML='';
-    placas.forEach(p=>{
-      const nome=document.getElementById('placaNome'+p.id)?.value||('Placa '+(p.id+1));
-      const kWp=num(document.getElementById('kWp'+p.id)?.value,p.kWp||0);
-      const pr=num(document.getElementById('pr'+p.id)?.value,(p.pr||0)*100);
-      const div=document.createElement('div'); div.className='comp-item'; div.dataset.kind='placa'; div.dataset.id=p.id;
-      div.innerHTML=`<div class="comp-head">☀️ ${nome}<span>#${p.id}</span></div><span>${kWp.toFixed(2)} kWp  • PR ${pr.toFixed(0)}%</span>`;
-      list.appendChild(div);
-    });
-    carros.forEach(c=>{
-      const nome=document.getElementById('carroNome'+c.id)?.value||('Carro '+(c.id+1));
-      const cap=num(document.getElementById('capNominal'+c.id)?.value,c.capNominal||0);
-      const socI=num(document.getElementById('socIni'+c.id)?.value,c.socIni||0); const socF=num(document.getElementById('socFim'+c.id)?.value,c.socFim||100);
-      const div=document.createElement('div'); div.className='comp-item'; div.dataset.kind='carro'; div.dataset.id=c.id;
-      div.innerHTML=`<div class="comp-head">🚗 ${nome}<span>#${c.id}</span></div><span>${cap.toFixed(1)} kWh • ${socI}%→${socF}%</span>`;
-      list.appendChild(div);
-    });
-  }
-
-  // SVG rendering
-  function renderSvg(){
-    ensureNodeState();
-    const svg=document.getElementById('simCanvas'); if(!svg) return;
-    const w=svg.clientWidth||svg.parentElement.clientWidth; const h=svg.clientHeight||svg.parentElement.clientHeight;
-    svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
-    // Clear
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    // Maybe central bus line
-    const bus=document.createElementNS('http://www.w3.org/2000/svg','line');
-    bus.setAttribute('x1',w/2); bus.setAttribute('x2',w/2); bus.setAttribute('y1',0); bus.setAttribute('y2',h); bus.setAttribute('class','bus-line'); svg.appendChild(bus);
-    // Helper to create node group
-    function makeNode(kind,id,label,lines){
-      const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.classList.add('node',kind); g.dataset.kind=kind; g.dataset.id=id;
-      const pos = nodeState[kind==='carro'?'carros':'placas'][id];
-      g.setAttribute('transform',`translate(${pos.x},${pos.y})`);
-      const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('width',140); rect.setAttribute('height',54 + lines.length*12); rect.setAttribute('rx',10); rect.setAttribute('ry',10); g.appendChild(rect);
-      const t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',10); t.setAttribute('y',18); t.textContent=label; g.appendChild(t);
-      lines.forEach((ln,i)=>{ const tx=document.createElementNS('http://www.w3.org/2000/svg','text'); tx.setAttribute('x',10); tx.setAttribute('y',34 + i*12); tx.textContent=ln; tx.setAttribute('opacity','.8'); g.appendChild(tx); });
-      svg.appendChild(g); return g;
-    }
-    // Placas left side
-    placas.forEach(p=>{
-      const nome=document.getElementById('placaNome'+p.id)?.value||('Placa '+(p.id+1));
-      const kWp=num(document.getElementById('kWp'+p.id)?.value,p.kWp||0);
-      const pr=num(document.getElementById('pr'+p.id)?.value,(p.pr||0)*100);
-      makeNode('placa',p.id,`☀️ ${nome}`,[`kWp ${kWp.toFixed(2)}`,`PR ${pr.toFixed(0)}%`]);
-    });
-    carros.forEach(c=>{
-      const nome=document.getElementById('carroNome'+c.id)?.value||('Carro '+(c.id+1));
-      const cap=num(document.getElementById('capNominal'+c.id)?.value,c.capNominal||0);
-      const socI=num(document.getElementById('socIni'+c.id)?.value,c.socIni||0); const socF=num(document.getElementById('socFim'+c.id)?.value,c.socFim||100);
-      const eta=num(document.getElementById('etaGlobal'+c.id)?.value,(c.etaGlobal||0.85)*100);
-      makeNode('carro',c.id,`🚗 ${nome}`,[`Cap ${cap.toFixed(1)} kWh`,`SOC ${socI}→${socF}%`,`η ${eta.toFixed?eta.toFixed(0):eta}%`]);
-    });
-  }
-
-  // Basic selection & dragging
-  let selected=null; let dragInfo=null;
-  function setSelected(kind,id){ selected={kind,id}; document.querySelectorAll('.node').forEach(n=>n.classList.remove('dragging')); }
-  document.addEventListener('mousedown',e=>{
-    const svgNode=e.target.closest && e.target.closest('.node');
-    if(svgNode){
-      const kind=svgNode.dataset.kind; const id=Number(svgNode.dataset.id);
-      setSelected(kind,id);
-      const pos=nodeState[kind==='carro'?'carros':'placas'][id];
-      const pt={x:e.clientX,y:e.clientY}; dragInfo={kind,id,startX:pos.x,startY:pos.y,pt}; svgNode.classList.add('dragging');
-    }
-  });
-  document.addEventListener('mousemove',e=>{
-    if(!dragInfo) return; const dx=e.clientX-dragInfo.pt.x; const dy=e.clientY-dragInfo.pt.y; const bucket=nodeState[dragInfo.kind==='carro'?'carros':'placas'][dragInfo.id]; bucket.x=dragInfo.startX+dx; bucket.y=dragInfo.startY+dy; renderSvg();
-  });
-  document.addEventListener('mouseup',()=>{ dragInfo=null; document.querySelectorAll('.node.dragging').forEach(n=>n.classList.remove('dragging')); });
-
-  // Editor modal
-  const editorModal=document.getElementById('editorModal');
-  const editorFields=document.getElementById('editorFields');
-  function openEditor(){
-    if(!selected){ showToast('Selecione um componente','warn',1500); return; }
-    const {kind,id}=selected;
-    editorFields.innerHTML='';
-    let html='';
-    if(kind==='carro'){
-      html = `<div class="grid">\n<div><label>Nome</label><input class="field" id="edNome" value="${document.getElementById('carroNome'+id)?.value||''}"></div>\n<div><label>Capacidade (kWh)</label><input class="field" id="edCap" type="number" step="0.1" value="${document.getElementById('capNominal'+id)?.value||60}"></div>\n<div><label>SOC Inicial (%)</label><input class="field" id="edSocI" type="number" value="${document.getElementById('socIni'+id)?.value||20}"></div>\n<div><label>SOC Final (%)</label><input class="field" id="edSocF" type="number" value="${document.getElementById('socFim'+id)?.value||100}"></div>\n<div><label>Eficiência Global (%)</label><input class="field" id="edEta" type="number" value="${document.getElementById('etaGlobal'+id)?.value||85}"></div>\n<div><label>Onboard (kW)</label><input class="field" id="edOnboard" type="number" step="0.1" value="${document.getElementById('onboardKW'+id)?.value||7.4}"></div>\n</div>`;
-    }else{
-      html = `<div class="grid">\n<div><label>Nome</label><input class="field" id="edNome" value="${document.getElementById('placaNome'+id)?.value||''}"></div>\n<div><label>kWp</label><input class="field" id="edkWp" type="number" step="0.01" value="${document.getElementById('kWp'+id)?.value||2}"></div>\n<div><label>PR (%)</label><input class="field" id="edPR" type="number" value="${document.getElementById('pr'+id)?.value||75}"></div>\n<div><label>η array (%)</label><input class="field" id="edEtaArr" type="number" value="${document.getElementById('etaArr'+id)?.value||100}"></div>\n<div><label>PSH (h)</label><input class="field" id="edPSH" type="number" step="0.1" value="${document.getElementById('psh'+id)?.value||5}"></div>\n</div>`;
-    }
-    editorFields.innerHTML=html;
-    editorModal.classList.add('open');
-  }
-  function closeEditor(){ editorModal.classList.remove('open'); }
-  document.getElementById('editorClose').addEventListener('click',closeEditor);
-  document.getElementById('editorCancelBtn').addEventListener('click',closeEditor);
-  document.getElementById('wbEditSelBtn').addEventListener('click',openEditor);
-  document.getElementById('editorSaveBtn').addEventListener('click',()=>{
-    if(!selected) return; const {kind,id}=selected;
-    if(kind==='carro'){
-      document.getElementById('carroNome'+id).value=document.getElementById('edNome').value;
-      document.getElementById('capNominal'+id).value=document.getElementById('edCap').value;
-      document.getElementById('socIni'+id).value=document.getElementById('edSocI').value;
-      document.getElementById('socFim'+id).value=document.getElementById('edSocF').value;
-      document.getElementById('etaGlobal'+id).value=document.getElementById('edEta').value;
-      document.getElementById('onboardKW'+id).value=document.getElementById('edOnboard').value;
-    }else{
-      document.getElementById('placaNome'+id).value=document.getElementById('edNome').value;
-      document.getElementById('kWp'+id).value=document.getElementById('edkWp').value;
-      document.getElementById('pr'+id).value=document.getElementById('edPR').value;
-      document.getElementById('etaArr'+id).value=document.getElementById('edEtaArr').value;
-      document.getElementById('psh'+id).value=document.getElementById('edPSH').value;
-    }
-    closeEditor(); renderWbAll(); if(validarCampos()) calcular();
-  });
-
-  // Buttons add/remove
-  document.getElementById('wbAddCarBtn').addEventListener('click',()=>{ adicionarCarro(); renderWbAll(); });
-  document.getElementById('wbAddPlacaBtn').addEventListener('click',()=>{ adicionarPlaca(); renderWbAll(); });
-  document.getElementById('wbRemoveSelBtn').addEventListener('click',()=>{ if(!selected) return; if(selected.kind==='carro') removerCarro(selected.id); else removerPlaca(selected.id); selected=null; renderWbAll(); calcular(); });
-  document.getElementById('wbSyncBtn').addEventListener('click',()=>{ renderWbAll(); calcular(); showToast('Sincronizado','ok',1200); });
-
-  // Results side
-  function renderResultsPane(){
-    const pane=document.getElementById('wbResults'); if(!pane) return; pane.innerHTML='';
-    pane.innerHTML += `<div><b>E_bat:</b> ${document.getElementById('kpiEbat').textContent}</div>`;
-    pane.innerHTML += `<div><b>E_PV:</b> ${document.getElementById('kpiEpv').textContent}</div>`;
-    pane.innerHTML += `<div><b>Geração/dia:</b> ${document.getElementById('kpiEdia').textContent}</div>`;
-    pane.innerHTML += `<div><b>Dias:</b> ${document.getElementById('kpiDias').textContent}</div>`;
-    pane.innerHTML += `<div><b>Horas Eq:</b> ${document.getElementById('kpiHoras').textContent}</div>`;
-    pane.innerHTML += `<div><b>t_min:</b> ${document.getElementById('kpiTmin').textContent}</div>`;
-    pane.innerHTML += `<div><b>Saldo:</b> ${document.getElementById('kpiDeficit').textContent}</div>`;
-    const pvResumo=document.getElementById('wbPvResumo');
-    if(pvResumo){
-      if(window._pvCurveData){ pvResumo.innerHTML=`Curva ativa: ${window._pvCurveData.energyKWhAdj.toFixed(2)} kWh/d (pico ${window._pvCurveData.peakKW.toFixed(2)} kW)`; }
-      else pvResumo.innerHTML=`kWp Total (aprox.): ${[...placas].reduce((s,p)=>s+num(document.getElementById('kWp'+p.id)?.value,p.kWp||0),0).toFixed(2)} kWp`;
-    }
-  }
-
-  function renderCalcPassos(){
-    const box=document.getElementById('wbCalcPassos'); if(!box) return;
-    // reutilizar diagInner se existe
-    const diagInner=document.getElementById('diagInner');
-    box.innerHTML = diagInner? diagInner.innerHTML.replace(/<br>/g,'\n') : 'Calcule para ver passos.';
-  }
-
-  function renderWbAll(){ if(!wbMode) return; renderCompList(); renderSvg(); renderResultsPane(); renderCalcPassos(); }
-  window.renderWbAll = renderWbAll;
-  // Hook recalculation to update workbench
-  const origCalc=calcular; calcular=function(){ origCalc(); renderWbAll(); };
-})();
 </script>
 </body>
 </html>
