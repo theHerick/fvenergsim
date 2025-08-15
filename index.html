@@ -687,6 +687,19 @@
       <div class="component-list" id="componentList">
         <!-- Componentes serão inseridos aqui via JS -->
       </div>
+      
+      <!-- Painel de Edição -->
+      <div id="editPanel" style="padding:12px;border-top:1px solid #e5e7eb;display:none;">
+        <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:600;">Editando:</div>
+        <div id="editContent">
+          <!-- Conteúdo de edição será inserido aqui -->
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px;">
+          <button id="saveEditSideBtn" style="flex:1;padding:4px 8px;background:var(--accent);color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">Salvar</button>
+          <button id="cancelEditSideBtn" style="flex:1;padding:4px 8px;background:transparent;color:var(--muted);border:1px solid #d1d5db;border-radius:4px;font-size:11px;cursor:pointer;">Cancelar</button>
+        </div>
+      </div>
+      
       <div style="padding:12px;border-top:1px solid #e5e7eb;">
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Configurações Globais:</div>
         <div style="margin-bottom:6px;">
@@ -1334,6 +1347,150 @@ function initEditModal(){
     }
     
     // Fechar modal e atualizar interface
+    close();
+    updateComponentList();
+    updateWorkspace();
+    updateResults();
+    calcular(); // Recalcular resultados
+  });
+}
+
+// Inicializar painel de edição lateral
+function initEditPanel(){
+  const saveBtn = document.getElementById('saveEditSideBtn');
+  const cancelBtn = document.getElementById('cancelEditSideBtn');
+  const editPanel = document.getElementById('editPanel');
+  
+  if(!saveBtn || !cancelBtn || !editPanel) return;
+  
+  const close = () => {
+    editPanel.style.display = 'none';
+  };
+  
+  // Event listeners
+  cancelBtn.addEventListener('click', close);
+  
+  // Função de salvar
+  saveBtn.addEventListener('click', () => {
+    const type = editPanel.dataset.editType;
+    const id = parseInt(editPanel.dataset.editId);
+    
+    if (type === 'carro') {
+      const nome = document.getElementById('editCarroNome').value.trim();
+      const cap = parseFloat(document.getElementById('editCapNominal').value);
+      const onboard = parseFloat(document.getElementById('editOnboardKW').value);
+      const efic = parseFloat(document.getElementById('editKmKWh').value);
+      const percUtil = parseFloat(document.getElementById('editPercUtil').value) / 100;
+      
+      // Validação básica
+      if (!nome || isNaN(cap) || isNaN(onboard) || isNaN(efic) || isNaN(percUtil)) {
+        showToast('Preencha todos os campos corretamente', 'err', 2000);
+        return;
+      }
+      
+      // Aplicar alterações aos campos originais
+      const nomeInput = document.getElementById('carroNome' + id);
+      const capInput = document.getElementById('capNominal' + id);
+      const onboardInput = document.getElementById('onboardKW' + id);
+      const eficInput = document.getElementById('kmKWh' + id);
+      const percUtilInput = document.getElementById('percUtil' + id);
+      
+      if (nomeInput) nomeInput.value = nome;
+      if (capInput) capInput.value = cap;
+      if (onboardInput) onboardInput.value = onboard;
+      if (eficInput) eficInput.value = efic;
+      if (percUtilInput) percUtilInput.value = percUtil;
+      
+      // Atualizar o objeto carro
+      const carro = carros.find(c => c.id === id);
+      if (carro) {
+        carro.capNominal = cap;
+        carro.onboardKW = onboard;
+        carro.kmKWh = efic;
+        carro.percUtil = percUtil;
+      }
+      
+      showToast(`Carro atualizado!`, 'ok', 1500);
+      
+    } else if (type === 'placa') {
+      const nome = document.getElementById('editPlacaNome').value.trim();
+      const kWp = parseFloat(document.getElementById('editKWp').value);
+      const pr = parseFloat(document.getElementById('editPR').value) / 100;
+      const psh = parseFloat(document.getElementById('editPSH').value);
+      
+      // Validação básica
+      if (!nome || isNaN(kWp) || isNaN(pr) || isNaN(psh)) {
+        showToast('Preencha todos os campos corretamente', 'err', 2000);
+        return;
+      }
+      
+      // Aplicar alterações aos campos originais
+      const nomeInput = document.getElementById('placaNome' + id);
+      const kWpInput = document.getElementById('kWp' + id);
+      const prInput = document.getElementById('pr' + id);
+      const pshInput = document.getElementById('psh' + id);
+      
+      if (nomeInput) nomeInput.value = nome;
+      if (kWpInput) kWpInput.value = kWp;
+      if (prInput) prInput.value = pr;
+      if (pshInput) pshInput.value = psh;
+      
+      // Atualizar o objeto placa
+      const placa = placas.find(p => p.id === id);
+      if (placa) {
+        placa.kWp = kWp;
+        placa.pr = pr;
+        placa.psh = psh;
+      }
+      
+      showToast(`Placa atualizada!`, 'ok', 1500);
+      
+    } else if (type === 'modulo') {
+      const nome = document.getElementById('editModuloNome').value.trim();
+      
+      // Validação básica
+      if (!nome) {
+        showToast('Preencha o nome do módulo', 'err', 2000);
+        return;
+      }
+      
+      // Atualizar nome do módulo
+      const modulo = modulos.find(m => m.id === id);
+      if (modulo) {
+        modulo.nome = nome;
+      }
+      
+      // Atualizar conexões baseado nos checkboxes
+      // Remover conexões existentes deste módulo
+      conexoes = conexoes.filter(c => c.moduloId !== id);
+      
+      // Adicionar novas conexões baseado nos checkboxes marcados
+      carros.forEach(c => {
+        const checkbox = document.getElementById(`conectCarro${c.id}`);
+        if (checkbox && checkbox.checked) {
+          conexoes.push({
+            moduloId: id,
+            componentType: 'carro',
+            componentId: c.id
+          });
+        }
+      });
+      
+      placas.forEach(p => {
+        const checkbox = document.getElementById(`conectPlaca${p.id}`);
+        if (checkbox && checkbox.checked) {
+          conexoes.push({
+            moduloId: id,
+            componentType: 'placa',
+            componentId: p.id
+          });
+        }
+      });
+      
+      showToast(`Módulo atualizado!`, 'ok', 1500);
+    }
+    
+    // Fechar painel e atualizar interface
     close();
     updateComponentList();
     updateWorkspace();
@@ -2497,6 +2654,7 @@ updateSavedCarModels();
 updateSavedPlacaModels();
 initSaveModal();
 initEditModal();
+initEditPanel();
 calcular();
 
 // UI dinâmica para campo de nome da configuração
@@ -2761,6 +2919,12 @@ function updateComponentList(){
 
 // Selecionar componente
 function selectComponent(type, id){
+  // Fechar painel de edição se estiver aberto
+  const editPanel = document.getElementById('editPanel');
+  if (editPanel) {
+    editPanel.style.display = 'none';
+  }
+  
   // Remover seleção anterior
   document.querySelectorAll('.component-item.selected').forEach(el => {
     el.classList.remove('selected');
@@ -2967,28 +3131,24 @@ function removeComponent(type, id){
   updateResults();
 }
 
-// Editar componente (modal de edição)
+// Editar componente (painel lateral)
 function editComponent(type, id){
-  const editModal = document.getElementById('editModal');
-  const editModalTitle = document.getElementById('editModalTitle');
-  const editModalContent = document.getElementById('editModalContent');
+  const editPanel = document.getElementById('editPanel');
+  const editContent = document.getElementById('editContent');
   
-  if (!editModal || !editModalTitle || !editModalContent) {
-    showToast('Erro: Modal de edição não encontrado', 'err', 3000);
+  if (!editPanel || !editContent) {
+    showToast('Erro: Painel de edição não encontrado', 'err', 3000);
     return;
   }
   
-  if (!editModal || !editModalTitle || !editModalContent) return;
-  
-  // Definir título do modal
+  // Definir títulos
   const titles = {
     'carro': 'Carro',
     'placa': 'Placa', 
     'modulo': 'Módulo de Conexão'
   };
-  editModalTitle.textContent = `Editar ${titles[type]} ${id + 1}`;
   
-  // Gerar conteúdo do modal baseado no tipo
+  // Gerar conteúdo baseado no tipo
   if (type === 'carro') {
     const carro = carros.find(c => c.id === id);
     if (!carro) return;
@@ -2999,32 +3159,27 @@ function editComponent(type, id){
     const eficInput = document.getElementById('kmKWh' + id);
     const percUtilInput = document.getElementById('percUtil' + id);
     
-    editModalContent.innerHTML = `
-      <div style="display: grid; gap: 16px;">
-        <div>
-          <label>Nome do Carro</label>
-          <input type="text" id="editCarroNome" class="field" value="${nomeInput ? nomeInput.value : `Carro ${id + 1}`}" placeholder="Nome do carro">
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <label>Capacidade Nominal (kWh)</label>
-            <input type="number" id="editCapNominal" class="field" value="${capInput ? capInput.value : (carro.capNominal || 60)}" step="0.1" min="1">
-          </div>
-          <div>
-            <label>Potência Onboard (kW)</label>
-            <input type="number" id="editOnboardKW" class="field" value="${onboardInput ? onboardInput.value : (carro.onboardKW || 7.4)}" step="0.1" min="0.1">
-          </div>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <label>Eficiência (km/kWh)</label>
-            <input type="number" id="editKmKWh" class="field" value="${eficInput ? eficInput.value : (carro.kmKWh || 5.0)}" step="0.1" min="1">
-          </div>
-          <div>
-            <label>% Utilização Bateria</label>
-            <input type="number" id="editPercUtil" class="field" value="${percUtilInput ? parseFloat(percUtilInput.value) * 100 : ((carro.percUtil || 0.8) * 100)}" step="1" min="10" max="100">
-          </div>
-        </div>
+    editContent.innerHTML = `
+      <div style="margin-bottom:8px;font-weight:600;color:var(--text);">🚗 ${titles[type]} ${id + 1}</div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">Nome:</label>
+        <input type="text" id="editCarroNome" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${nomeInput ? nomeInput.value : `Carro ${id + 1}`}" placeholder="Nome do carro">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">Capacidade (kWh):</label>
+        <input type="number" id="editCapNominal" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${capInput ? capInput.value : (carro.capNominal || 60)}" step="0.1" min="1">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">Onboard (kW):</label>
+        <input type="number" id="editOnboardKW" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${onboardInput ? onboardInput.value : (carro.onboardKW || 7.4)}" step="0.1" min="0.1">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">Eficiência (km/kWh):</label>
+        <input type="number" id="editKmKWh" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${eficInput ? eficInput.value : (carro.kmKWh || 5.0)}" step="0.1" min="1">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">% Utilização:</label>
+        <input type="number" id="editPercUtil" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${percUtilInput ? parseFloat(percUtilInput.value) * 100 : ((carro.percUtil || 0.8) * 100)}" step="1" min="10" max="100">
       </div>
     `;
   } else if (type === 'placa') {
@@ -3036,26 +3191,23 @@ function editComponent(type, id){
     const prInput = document.getElementById('pr' + id);
     const pshInput = document.getElementById('psh' + id);
     
-    editModalContent.innerHTML = `
-      <div style="display: grid; gap: 16px;">
-        <div>
-          <label>Nome da Placa</label>
-          <input type="text" id="editPlacaNome" class="field" value="${nomeInput ? nomeInput.value : `Placa ${id + 1}`}" placeholder="Nome da placa">
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div>
-            <label>Potência Instalada (kWp)</label>
-            <input type="number" id="editKWp" class="field" value="${kWpInput ? kWpInput.value : (placa.kWp || 2.0)}" step="0.01" min="0.01">
-          </div>
-          <div>
-            <label>Performance Ratio (%)</label>
-            <input type="number" id="editPR" class="field" value="${prInput ? parseFloat(prInput.value) * 100 : ((placa.pr || 0.75) * 100)}" step="1" min="50" max="95">
-          </div>
-        </div>
-        <div>
-          <label>Pico de Sol Hora (h/dia)</label>
-          <input type="number" id="editPSH" class="field" value="${pshInput ? pshInput.value : (placa.psh || 5.5)}" step="0.1" min="1" max="12">
-        </div>
+    editContent.innerHTML = `
+      <div style="margin-bottom:8px;font-weight:600;color:var(--text);">☀️ ${titles[type]} ${id + 1}</div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">Nome:</label>
+        <input type="text" id="editPlacaNome" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${nomeInput ? nomeInput.value : `Placa ${id + 1}`}" placeholder="Nome da placa">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">Potência (kWp):</label>
+        <input type="number" id="editKWp" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${kWpInput ? kWpInput.value : (placa.kWp || 2.0)}" step="0.01" min="0.01">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">PR (%):</label>
+        <input type="number" id="editPR" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${prInput ? parseFloat(prInput.value) * 100 : ((placa.pr || 0.75) * 100)}" step="1" min="50" max="95">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">PSH (h/dia):</label>
+        <input type="number" id="editPSH" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${pshInput ? pshInput.value : (placa.psh || 5.5)}" step="0.1" min="1" max="12">
       </div>
     `;
   } else if (type === 'modulo') {
@@ -3075,48 +3227,48 @@ function editComponent(type, id){
       return {id: p.id, nome, conectado};
     });
     
-    editModalContent.innerHTML = `
-      <div style="display: grid; gap: 16px;">
-        <div>
-          <label>Nome do Módulo</label>
-          <input type="text" id="editModuloNome" class="field" value="${modulo.nome}" placeholder="Nome do módulo">
+    editContent.innerHTML = `
+      <div style="margin-bottom:8px;font-weight:600;color:var(--text);">📦 ${titles[type]} ${id + 1}</div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px;">Nome:</label>
+        <input type="text" id="editModuloNome" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;" value="${modulo.nome}" placeholder="Nome do módulo">
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--accent);display:block;margin-bottom:3px;font-weight:600;">Carros Conectados:</label>
+        <div style="max-height:80px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;padding:4px;background:#f9fafb;">
+          ${carrosDisponiveis.map(c => `
+            <label style="display:flex;align-items:center;gap:4px;margin-bottom:2px;cursor:pointer;font-size:10px;">
+              <input type="checkbox" id="conectCarro${c.id}" ${c.conectado ? 'checked' : ''} style="margin:0;scale:0.8;">
+              <span style="flex:1;">${c.nome}</span>
+            </label>
+          `).join('')}
+          ${carrosDisponiveis.length === 0 ? '<p style="color:var(--muted);font-size:10px;margin:2px;">Nenhum carro</p>' : ''}
         </div>
-        <div>
-          <h4 style="margin: 0 0 8px; color: var(--accent);">Carros Conectados</h4>
-          <div style="max-height: 120px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.16); border-radius: 8px; padding: 8px;">
-            ${carrosDisponiveis.map(c => `
-              <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; cursor: pointer;">
-                <input type="checkbox" id="conectCarro${c.id}" ${c.conectado ? 'checked' : ''} style="margin: 0;">
-                <span style="flex: 1;">${c.nome}</span>
-              </label>
-            `).join('')}
-            ${carrosDisponiveis.length === 0 ? '<p style="color: var(--muted); font-size: 12px; margin: 0;">Nenhum carro disponível</p>' : ''}
-          </div>
-        </div>
-        <div>
-          <h4 style="margin: 0 0 8px; color: var(--accent);">Placas Conectadas</h4>
-          <div style="max-height: 120px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.16); border-radius: 8px; padding: 8px;">
-            ${placasDisponiveis.map(p => `
-              <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; cursor: pointer;">
-                <input type="checkbox" id="conectPlaca${p.id}" ${p.conectado ? 'checked' : ''} style="margin: 0;">
-                <span style="flex: 1;">${p.nome}</span>
-              </label>
-            `).join('')}
-            ${placasDisponiveis.length === 0 ? '<p style="color: var(--muted); font-size: 12px; margin: 0;">Nenhuma placa disponível</p>' : ''}
-          </div>
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:11px;color:var(--accent);display:block;margin-bottom:3px;font-weight:600;">Placas Conectadas:</label>
+        <div style="max-height:80px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;padding:4px;background:#f9fafb;">
+          ${placasDisponiveis.map(p => `
+            <label style="display:flex;align-items:center;gap:4px;margin-bottom:2px;cursor:pointer;font-size:10px;">
+              <input type="checkbox" id="conectPlaca${p.id}" ${p.conectado ? 'checked' : ''} style="margin:0;scale:0.8;">
+              <span style="flex:1;">${p.nome}</span>
+            </label>
+          `).join('')}
+          ${placasDisponiveis.length === 0 ? '<p style="color:var(--muted);font-size:10px;margin:2px;">Nenhuma placa</p>' : ''}
         </div>
       </div>
     `;
   }
   
   // Armazenar dados para salvamento
-  editModal.dataset.editType = type;
-  editModal.dataset.editId = id;
+  editPanel.dataset.editType = type;
+  editPanel.dataset.editId = id;
   
-  // Mostrar modal
-  editModal.style.display = 'flex';
-  editModal.classList.add('show');
-  document.body.classList.add('modal-open');
+  // Mostrar painel
+  editPanel.style.display = 'block';
+  
+  // Scroll para o painel se necessário
+  editPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // Inicializar workspace
