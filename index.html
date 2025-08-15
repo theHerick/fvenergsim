@@ -415,6 +415,52 @@
     </div>
   </div>
   <div class="section-title" style="margin-top:16px;">☀️ Sistema Fotovoltaico</div>
+  <div style="margin:4px 2px 14px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+    <div style="min-width:200px;flex:1;">
+      <label style="font-size:12px;">Modo de Geração</label>
+      <select id="pvGenMode" class="field" style="padding:11px 12px;">
+        <option value="param" selected>Parâmetros (kWp / PR / PSH)</option>
+        <option value="curve">Curva Horária (kW)</option>
+      </select>
+      <div class="hint" style="font-size:10px;margin-top:4px;">Escolha se deseja inserir parâmetros médios ou a curva horária direta.</div>
+    </div>
+    <div id="pvCurveMiniKpi" style="display:none;min-width:220px;font-size:11px;line-height:1.3;color:var(--muted);">
+      <b>Curva:</b> <span id="pvCurveResumo">—</span><br>
+      <span id="pvCurveAlert" style="color:var(--warn);"></span>
+    </div>
+  </div>
+  <!-- Bloco Curva Horária -->
+  <div id="pvCurveBlock" style="display:none;margin:6px 2px 18px;background:var(--card);border:1px solid rgba(255,255,255,0.18);border-radius:14px;padding:14px 14px 16px;">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+      <div style="flex:1;min-width:260px;display:flex;flex-direction:column;">
+        <label style="font-size:12px;">Curva de Potência FV (kW) <span class="unit">valores separados por vírgula</span></label>
+        <textarea id="pvCurveInput" class="field" style="min-height:120px;resize:vertical;font-family:monospace;font-size:12px;line-height:1.35;" placeholder="Ex: 0,0,0,0,0,0,0.2,0.8,1.5,2.3,3.0,3.6,3.8,3.5,3.1,2.4,1.8,1.2,0.6,0.2,0,0,0,0"></textarea>
+        <div class="hint" style="font-size:10px;margin-top:4px;">24 valores = potência média de cada hora (kW). Se usar outro intervalo, informe Δt.</div>
+      </div>
+      <div style="width:180px;display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <label style="font-size:12px;">Δt entre pontos <span class="unit">h</span></label>
+          <input id="pvCurveDt" type="number" class="field" value="1" step="0.25" min="0.05">
+        </div>
+        <div>
+          <label style="font-size:12px;">Assumir perdas adicionais <span class="unit">%</span></label>
+          <input id="pvCurveLoss" type="number" class="field" value="0" step="1" min="0" max="50">
+          <div class="hint" style="font-size:10px;margin-top:4px;">Aplicado sobre energia total (opcional).</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button type="button" class="secondary" style="padding:6px 10px;font-size:11px;" id="pvCurveBtnParse">Aplicar Curva</button>
+          <button type="button" class="secondary" style="padding:6px 10px;font-size:11px;" id="pvCurveBtnSample">Exemplo</button>
+          <button type="button" class="secondary" style="padding:6px 10px;font-size:11px;" id="pvCurveBtnClear">Limpar</button>
+        </div>
+        <div id="pvCurveFeedback" style="font-size:11px;margin-top:4px;min-height:16px;"></div>
+      </div>
+      <div style="flex:1;min-width:220px;">
+        <label style="font-size:12px;">Pré-visualização</label>
+        <div id="pvCurvePreview" style="background:linear-gradient(180deg,var(--glass),transparent);border:1px solid rgba(255,255,255,0.18);border-radius:12px;padding:8px 10px;font-size:10.5px;min-height:120px;white-space:pre;overflow:auto;font-family:monospace;line-height:1.25;"></div>
+        <div class="hint" style="font-size:10px;margin-top:4px;">Mostra potência e energia acumulada.</div>
+      </div>
+    </div>
+  </div>
   <div id="placasContainer"></div>
   <div style="display:flex; gap:8px; margin:6px 2px 14px; flex-wrap:wrap;">
     <button type="button" class="secondary" style="padding:8px 14px;font-size:12px;" onclick="adicionarPlaca()">+ Adicionar Placa</button>
@@ -1335,6 +1381,15 @@ function loadPlacaModel(){
 function calcular(){
   const debug = document.getElementById('debugMode')?.checked;
   if(debug) console.groupCollapsed('%c[CÁLCULO] Início','color:#7ccfff');
+  // ==== Checar modo de geração PV (param vs curva) ====
+  const genMode = document.getElementById('pvGenMode')?.value || 'param';
+  let curveEnergyDay = null; // kWh/dia se curva ativa
+  let curvePeakKW = null;
+  if(genMode==='curve' && window._pvCurveData){
+    curveEnergyDay = window._pvCurveData.energyKWhAdj; // já com perdas
+    curvePeakKW = window._pvCurveData.peakKW;
+    if(debug) console.log('[CURVA PV]', window._pvCurveData);
+  }
   // Somar energia de todos os carros
   let E_bat_total = 0;
   let E_pv_total = 0;
@@ -1383,6 +1438,7 @@ function calcular(){
   let nomesPlacas = [];
   let pr_weighted_sum = 0; let psh_weighted_sum = 0; let eta_weighted_sum = 0; let eff_weighted_sum = 0; let weight_sum = 0;
   placas.forEach(p => {
+  if(genMode==='curve') return; // ignora parâmetros individuais quando usando curva horária global
       const kWp = Math.max(0, num(document.getElementById('kWp'+p.id)?.value, p.kWp||2.0));
       // PR já armazenado como fração; converter DOM somente se alterado (DOM em %) -> fração
       const pr = (function(){
@@ -1412,15 +1468,24 @@ function calcular(){
     eff_total = eff_weighted_sum / weight_sum;
   } else { pr_total = 0; psh_total = 0; etaArr_total = 0; eff_total = 0; }
 
+  // Se modo curva: substituir métricas principais
+  if(genMode==='curve' && curveEnergyDay!=null){
+    // kWp_total aproximado: usar pico da curva como proxy de kWp efetivo
+    kWp_total = curvePeakKW || 0;
+    // Efetivo (PR×η) não se aplica diretamente; definimos eff_total=1 e pr_total=1 para preservar energia já contabilizada.
+    pr_total = 1; etaArr_total = 1; eff_total = 1; psh_total = curveEnergyDay>0 && kWp_total>0 ? (curveEnergyDay / kWp_total) : 0; // horas equivalentes
+  }
+
   // Cálculos totais
   const E_dia = kWp_total * psh_total * eff_total; // usa PR * eta adicional
+  const E_dia_final = (genMode==='curve' && curveEnergyDay!=null) ? curveEnergyDay : E_dia;
   const dias = (E_dia > 0) ? (E_pv_total / E_dia) : Infinity;
   const horasSol = (kWp_total*eff_total > 0) ? (E_pv_total / (kWp_total * eff_total)) : Infinity;
   const P_pico_FV = kWp_total * eff_total;
   const P_lim = Math.max(0, Math.min(onboardKW_total || Infinity, P_pico_FV || Infinity));
   const t_min = (P_lim > 0) ? (E_bat_total / P_lim) : Infinity;
   // Saldo diário FV vs demanda
-  const saldo = E_dia - E_pv_total; // positivo excedente, negativo déficit
+  const saldo = E_dia_final - E_pv_total; // positivo excedente, negativo déficit
   if(debug) console.log('[TOTAIS]', {kWp_total, pr_total_fraction: pr_total, etaArr_total, eff_total, psh_total, E_dia, E_bat_total, E_pv_total, saldo, dias, horasSol, P_pico_FV, P_lim, t_min});
   const tarifa = num(document.getElementById('tarifaInput')?.value,0.95);
   const kpiDef = document.getElementById('kpiDeficit');
@@ -1444,7 +1509,7 @@ function calcular(){
   // Exibir KPIs totais
   document.getElementById('kpiEbat').innerHTML  = `<span class="ok">${fmtKWh(E_bat_total)}</span>`;
   document.getElementById('kpiEpv').innerHTML   = fmtKWh(E_pv_total);
-  document.getElementById('kpiEdia').innerHTML  = fmtKWh(E_dia) + ` <small>(por dia)</small>`;
+  document.getElementById('kpiEdia').innerHTML  = fmtKWh(E_dia_final) + ` <small>(por dia)</small>`;
   document.getElementById('kpiDias').innerHTML  = fmtDias(dias);
   document.getElementById('kpiHoras').innerHTML = fmtH(horasSol);
   document.getElementById('kpiTmin').innerHTML  = Number.isFinite(t_min) ? fmtH(t_min) : '—';
@@ -1878,6 +1943,80 @@ if(lastCfg){
   },150);
 }
 showToast('Pronto para usar.','ok',2600);
+
+// ======== PARSER CURVA PV ========
+function parsePvCurve(raw, dt){
+  const arr = raw.split(/[,;\s]+/).filter(x=>x.length).map(v=>Number(v));
+  const valid = arr.filter(v=>Number.isFinite(v) && v>=0);
+  if(!valid.length) return null;
+  const energyKWh = valid.reduce((s,v)=>s+v*dt,0);
+  const peakKW = Math.max(...valid);
+  return {points:valid, dt, energyKWh, peakKW};
+}
+function applyCurveLoss(base, lossPct){
+  const f = clamp(1 - lossPct/100, 0, 1);
+  return base * f;
+}
+function formatCurvePreview(data, lossPct){
+  if(!data) return '';
+  const lines = [];
+  let cum=0; let cumAdj=0; const f = clamp(1-lossPct/100,0,1);
+  data.points.forEach((p,i)=>{ cum += p*data.dt; cumAdj += p*data.dt*f; lines.push((i+1).toString().padStart(2,'0')+` | ${p.toFixed(3)} kW | E=${cum.toFixed(3)} kWh | E*=${cumAdj.toFixed(3)}`); });
+  lines.push('——');
+  lines.push(`Total: ${data.energyKWh.toFixed(3)} kWh`+(lossPct?` → ${(data.energyKWh*f).toFixed(3)} kWh (após perdas)`:''));
+  const heq = data.peakKW>0 ? (data.energyKWh/data.peakKW).toFixed(2) : '—';
+  lines.push(`Pico: ${data.peakKW.toFixed(3)} kW  | Horas eq: ${heq} h`);
+  return lines.join('\n');
+}
+function updateCurveSummary(){
+  const mode = document.getElementById('pvGenMode')?.value || 'param';
+  const resumo = document.getElementById('pvCurveResumo');
+  const alert = document.getElementById('pvCurveAlert');
+  const mini = document.getElementById('pvCurveMiniKpi');
+  if(mode!=='curve'){ mini.style.display='none'; return; }
+  mini.style.display='block';
+  if(window._pvCurveData){
+    const d=window._pvCurveData;
+    resumo.textContent = `${d.energyKWhAdj.toFixed(2)} kWh/dia | Pico ${d.peakKW.toFixed(2)} kW | Horas eq ${(d.energyKWhAdj/d.peakKW).toFixed(2)} h`;
+    alert.textContent = d.points.length!==24?`(${d.points.length} pontos; Δt=${d.dt}h)`:'24h';
+  } else { resumo.textContent='—'; alert.textContent=''; }
+}
+function handlePvGenMode(){
+  const mode = document.getElementById('pvGenMode')?.value || 'param';
+  const block = document.getElementById('pvCurveBlock');
+  block.style.display = mode==='curve' ? 'block' : 'none';
+  // Mostrar/esconder campos de parâmetros das placas
+  placas.forEach(p=>{
+    const wrap=document.getElementById('placa'+p.id);
+    if(wrap){ wrap.style.opacity = mode==='curve'?0.35:1; wrap.style.pointerEvents = mode==='curve'?'none':'auto'; }
+  });
+  updateCurveSummary();
+}
+document.getElementById('pvGenMode')?.addEventListener('change',()=>{ handlePvGenMode(); if(validarCampos()) calcular(); renderDiagram?.(); });
+document.getElementById('pvCurveBtnSample')?.addEventListener('click',()=>{
+  const sample = '0,0,0,0,0,0,0.3,1.2,2.4,3.5,4.2,4.8,4.9,4.6,4.0,3.1,2.2,1.4,0.7,0.2,0,0,0,0';
+  document.getElementById('pvCurveInput').value = sample;
+});
+document.getElementById('pvCurveBtnClear')?.addEventListener('click',()=>{
+  document.getElementById('pvCurveInput').value=''; window._pvCurveData=null; document.getElementById('pvCurvePreview').textContent=''; updateCurveSummary(); calcular(); renderDiagram?.();
+});
+document.getElementById('pvCurveBtnParse')?.addEventListener('click',()=>{
+  const raw = document.getElementById('pvCurveInput').value.trim();
+  const dt = num(document.getElementById('pvCurveDt').value,1);
+  const loss = num(document.getElementById('pvCurveLoss').value,0);
+  const fb = document.getElementById('pvCurveFeedback');
+  if(!raw){ fb.style.color='var(--warn)'; fb.textContent='Forneça valores.'; return; }
+  const parsed = parsePvCurve(raw, dt);
+  if(!parsed){ fb.style.color='var(--err)'; fb.textContent='Nenhum valor numérico válido.'; return; }
+  parsed.energyKWhAdj = applyCurveLoss(parsed.energyKWh, loss);
+  window._pvCurveData = parsed;
+  document.getElementById('pvCurvePreview').textContent = formatCurvePreview(parsed, loss);
+  fb.style.color='var(--ok)'; fb.textContent='Curva aplicada.';
+  updateCurveSummary();
+  if(validarCampos()) calcular(); renderDiagram?.();
+});
+handlePvGenMode();
+updateCurveSummary();
 
 // ===================== NOVA LÓGICA SIMULADOR =====================
 (function(){
