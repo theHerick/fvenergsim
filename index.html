@@ -2866,7 +2866,7 @@ function updateComponentList(){
     
     const nome = document.getElementById('placaNome'+p.id)?.value || `Placa ${p.id+1}`;
     const kWp = num(document.getElementById('kWp'+p.id)?.value, p.kWp || 2.0);
-    const pr = num(document.getElementById('pr'+p.id)?.value, (p.pr || 0.75) * 100);
+    const pr = num(document.getElementById('pr'+p.id)?.value, (p.pr || 0.75));
     
     item.innerHTML = `
       <div class="component-title">
@@ -2874,7 +2874,7 @@ function updateComponentList(){
       </div>
       <div class="component-info">
         Potência: ${kWp.toFixed(2)} kWp<br>
-        PR: ${pr.toFixed(0)}%
+        PR: ${(pr * 100).toFixed(0)}%
       </div>
       <div class="component-actions">
         <button class="component-action" onclick="editComponent('placa', ${p.id})">✏️</button>
@@ -3318,11 +3318,11 @@ function updateWorkspace(){
   placas.forEach((p, index) => {
     const nome = document.getElementById('placaNome'+p.id)?.value || `Placa ${p.id+1}`;
     const kWp = num(document.getElementById('kWp'+p.id)?.value, p.kWp || 2.0);
-    const pr = num(document.getElementById('pr'+p.id)?.value, (p.pr || 0.75) * 100);
+    const pr = num(document.getElementById('pr'+p.id)?.value, (p.pr || 0.75));
     
     const component = createWorkspaceComponent('placa', p.id, nome, [
       `${kWp.toFixed(2)} kWp`,
-      `PR: ${pr.toFixed(0)}%`
+      `PR: ${(pr * 100).toFixed(0)}%`
     ]);
     
     // Posição inicial
@@ -3414,33 +3414,72 @@ function drawConnections(){
   svg.style.pointerEvents = 'none';
   svg.style.zIndex = '1';
   
-  // Conectar placas aos carros (exemplo simples)
-  const placaElements = canvas.querySelectorAll('.workspace-component.placa');
-  const carroElements = canvas.querySelectorAll('.workspace-component.carro');
-  
-  if(placaElements.length > 0 && carroElements.length > 0) {
-    placaElements.forEach(placa => {
-      carroElements.forEach(carro => {
-        const placaRect = placa.getBoundingClientRect();
-        const carroRect = carro.getBoundingClientRect();
-        const canvasRect = canvas.getBoundingClientRect();
-        
-        const x1 = placaRect.left + placaRect.width/2 - canvasRect.left;
-        const y1 = placaRect.bottom - canvasRect.top;
-        const x2 = carroRect.left + carroRect.width/2 - canvasRect.left;
-        const y2 = carroRect.top - canvasRect.top;
-        
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        line.setAttribute('d', `M ${x1} ${y1} Q ${(x1+x2)/2} ${(y1+y2)/2} ${x2} ${y2}`);
-        line.setAttribute('stroke', '#2563eb');
-        line.setAttribute('stroke-width', '2');
-        line.setAttribute('fill', 'none');
-        line.className = 'connection-line';
-        
-        svg.appendChild(line);
-      });
+  // Desenhar conexões baseadas nos módulos
+  modulos.forEach(modulo => {
+    const moduloElement = canvas.querySelector(`#workspace-modulo-${modulo.id}`);
+    if (!moduloElement) return;
+    
+    const moduloRect = moduloElement.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const moduloCenterX = moduloRect.left + moduloRect.width/2 - canvasRect.left;
+    const moduloCenterY = moduloRect.top + moduloRect.height/2 - canvasRect.top;
+    
+    // Obter componentes conectados a este módulo
+    const conexoesModulo = conexoes.filter(c => c.moduloId === modulo.id);
+    
+    conexoesModulo.forEach(conexao => {
+      const componentElement = canvas.querySelector(`#workspace-${conexao.componentType}-${conexao.componentId}`);
+      if (!componentElement) return;
+      
+      const componentRect = componentElement.getBoundingClientRect();
+      const componentCenterX = componentRect.left + componentRect.width/2 - canvasRect.left;
+      const componentCenterY = componentRect.top + componentRect.height/2 - canvasRect.top;
+      
+      // Calcular pontos de conexão nas bordas dos componentes
+      const dx = componentCenterX - moduloCenterX;
+      const dy = componentCenterY - moduloCenterY;
+      const distance = Math.sqrt(dx*dx + dy*dy);
+      
+      if (distance === 0) return;
+      
+      // Pontos de saída/entrada nas bordas
+      const moduleEdgeX = moduloCenterX + (dx/distance) * (moduloRect.width/2);
+      const moduleEdgeY = moduloCenterY + (dy/distance) * (moduloRect.height/2);
+      const componentEdgeX = componentCenterX - (dx/distance) * (componentRect.width/2);
+      const componentEdgeY = componentCenterY - (dy/distance) * (componentRect.height/2);
+      
+      // Criar linha com curvatura suave
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const controlX = (moduleEdgeX + componentEdgeX) / 2;
+      const controlY = Math.min(moduleEdgeY, componentEdgeY) - 20;
+      
+      line.setAttribute('d', `M ${moduleEdgeX} ${moduleEdgeY} Q ${controlX} ${controlY} ${componentEdgeX} ${componentEdgeY}`);
+      line.setAttribute('stroke', conexao.componentType === 'carro' ? '#2563eb' : '#f59e0b');
+      line.setAttribute('stroke-width', '2.5');
+      line.setAttribute('fill', 'none');
+      line.setAttribute('stroke-dasharray', '5,3');
+      line.className = 'connection-line';
+      
+      // Adicionar sombra para melhor visibilidade
+      const shadow = line.cloneNode();
+      shadow.setAttribute('stroke', 'rgba(0,0,0,0.2)');
+      shadow.setAttribute('stroke-width', '4');
+      shadow.setAttribute('stroke-dasharray', 'none');
+      svg.appendChild(shadow);
+      
+      svg.appendChild(line);
+      
+      // Adicionar pequeno círculo no ponto de conexão do módulo
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', moduleEdgeX);
+      dot.setAttribute('cy', moduleEdgeY);
+      dot.setAttribute('r', '4');
+      dot.setAttribute('fill', '#10b981');
+      dot.setAttribute('stroke', '#fff');
+      dot.setAttribute('stroke-width', '2');
+      svg.appendChild(dot);
     });
-  }
+  });
   
   canvas.appendChild(svg);
 }
