@@ -261,6 +261,24 @@
     background:linear-gradient(135deg,#fffbeb,#fef3c7);
   }
   
+  .workspace-component.modulo{
+    border-color:#10b981;
+    background:linear-gradient(135deg,#ecfdf5,#d1fae5);
+    min-width:160px;
+    min-height:120px;
+  }
+  
+  .workspace-component.modulo .workspace-title{
+    color:#065f46;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  
+  .workspace-component.modulo .workspace-details{
+    color:#047857;
+  }
+  
   .workspace-title{
     font-weight:700;
     font-size:14px;
@@ -629,6 +647,9 @@
         </button>
         <button class="toolbar-btn" id="addPlacaBtn">
           ☀️ Adicionar Placa
+        </button>
+        <button class="toolbar-btn" id="addModuloBtn">
+          📦 Adicionar Módulo
         </button>
       </div>
       
@@ -1266,6 +1287,50 @@ function initEditModal(){
       }
       
       showToast(`Placa ${id + 1} atualizada com sucesso!`, 'ok', 2000);
+      
+    } else if (type === 'modulo') {
+      const nome = document.getElementById('editModuloNome').value.trim();
+      
+      // Validação básica
+      if (!nome) {
+        showToast('Por favor, preencha o nome do módulo', 'err', 3000);
+        return;
+      }
+      
+      // Atualizar nome do módulo
+      const modulo = modulos.find(m => m.id === id);
+      if (modulo) {
+        modulo.nome = nome;
+      }
+      
+      // Atualizar conexões baseado nos checkboxes
+      // Remover conexões existentes deste módulo
+      conexoes = conexoes.filter(c => c.moduloId !== id);
+      
+      // Adicionar novas conexões baseado nos checkboxes marcados
+      carros.forEach(c => {
+        const checkbox = document.getElementById(`conectCarro${c.id}`);
+        if (checkbox && checkbox.checked) {
+          conexoes.push({
+            moduloId: id,
+            componentType: 'carro',
+            componentId: c.id
+          });
+        }
+      });
+      
+      placas.forEach(p => {
+        const checkbox = document.getElementById(`conectPlaca${p.id}`);
+        if (checkbox && checkbox.checked) {
+          conexoes.push({
+            moduloId: id,
+            componentType: 'placa',
+            componentId: p.id
+          });
+        }
+      });
+      
+      showToast(`Módulo ${nome} atualizado com sucesso!`, 'ok', 2000);
     }
     
     // Fechar modal e atualizar interface
@@ -1554,6 +1619,10 @@ function calcularParray(id){
 
 let carros = [{id:0, percUtil:0.95, etaGlobal:0.85}];
 let placas = [{id:0, pr:0.75, etaArr:1}];
+let modulos = []; // Array para módulos de conexão
+
+// Estrutura de conexões: cada entrada tem {moduloId, componentType, componentId}
+let conexoes = [];
 let nextCarroId = 1;
 let nextPlacaId = 1;
 
@@ -1631,6 +1700,36 @@ function duplicarPlaca(id){
   };
   placas.push(clone);
   renderPlacas();
+}
+
+let nextModuloId = 0;
+function adicionarModulo(){
+  modulos.push({id:nextModuloId++, nome: `Módulo ${nextModuloId}`});
+  updateComponentList();
+  updateWorkspace();
+  showToast(`Módulo ${nextModuloId} adicionado`, 'ok', 1500);
+}
+function removerModulo(id){
+  modulos = modulos.filter(m=>m.id!==id);
+  // Remover todas as conexões relacionadas a este módulo
+  conexoes = conexoes.filter(c=>c.moduloId!==id);
+  updateComponentList();
+  updateWorkspace();
+  updateResults();
+  showToast(`Módulo removido`, 'ok', 1500);
+}
+function duplicarModulo(id){
+  const origem = modulos.find(m=>m.id===id);
+  if(!origem) return;
+  const clone = {
+    ...origem,
+    id: nextModuloId++,
+    nome: origem.nome + ' (cópia)'
+  };
+  modulos.push(clone);
+  updateComponentList();
+  updateWorkspace();
+  showToast(`Módulo duplicado`, 'ok', 1500);
 }
 
 // Salvar/Carregar configurações
@@ -2527,6 +2626,10 @@ function initLogisimInterface(){
     showToast('Placa adicionada', 'ok', 1500);
   });
   
+  document.getElementById('addModuloBtn')?.addEventListener('click', () => {
+    adicionarModulo();
+  });
+  
   document.getElementById('calcularBtn')?.addEventListener('click', () => {
     if(validarCampos()) {
       calcular();
@@ -2624,6 +2727,36 @@ function updateComponentList(){
     item.addEventListener('click', () => selectComponent('placa', p.id));
     list.appendChild(item);
   });
+  
+  // Adicionar módulos
+  modulos.forEach(m => {
+    const item = document.createElement('div');
+    item.className = 'component-item';
+    item.setAttribute('data-type', 'modulo');
+    item.setAttribute('data-id', m.id);
+    
+    // Contar componentes conectados
+    const conexoesModulo = conexoes.filter(c => c.moduloId === m.id);
+    const carrosConectados = conexoesModulo.filter(c => c.componentType === 'carro').length;
+    const placasConectadas = conexoesModulo.filter(c => c.componentType === 'placa').length;
+    
+    item.innerHTML = `
+      <div class="component-title">
+        📦 ${m.nome}
+      </div>
+      <div class="component-info">
+        Carros: ${carrosConectados}<br>
+        Placas: ${placasConectadas}
+      </div>
+      <div class="component-actions">
+        <button class="component-action" onclick="editComponent('modulo', ${m.id})">✏️</button>
+        <button class="component-action" onclick="removeComponent('modulo', ${m.id})">🗑️</button>
+      </div>
+    `;
+    
+    item.addEventListener('click', () => selectComponent('modulo', m.id));
+    list.appendChild(item);
+  });
 }
 
 // Selecionar componente
@@ -2644,6 +2777,180 @@ function selectComponent(type, id){
   if(workspaceItem) workspaceItem.classList.add('selected');
   
   selectedComponent = {type, id};
+  
+  // Se for um módulo, calcular e mostrar resultados específicos
+  if (type === 'modulo') {
+    calcularModulo(id);
+  } else {
+    // Para outros componentes, mostrar resultados gerais
+    updateResults();
+  }
+}
+
+// Calcular resultados específicos de um módulo
+function calcularModulo(moduloId) {
+  const modulo = modulos.find(m => m.id === moduloId);
+  if (!modulo) return;
+  
+  // Obter componentes conectados ao módulo
+  const conexoesModulo = conexoes.filter(c => c.moduloId === moduloId);
+  const carrosConectados = conexoesModulo
+    .filter(c => c.componentType === 'carro')
+    .map(c => carros.find(carro => carro.id === c.componentId))
+    .filter(Boolean);
+  const placasConectadas = conexoesModulo
+    .filter(c => c.componentType === 'placa')
+    .map(c => placas.find(placa => placa.id === c.componentId))
+    .filter(Boolean);
+  
+  if (carrosConectados.length === 0 || placasConectadas.length === 0) {
+    mostrarResultadosModulo(modulo, {}, []);
+    return;
+  }
+  
+  // Calcular usando apenas os componentes conectados
+  const carrosData = carrosConectados.map(c => ({
+    id: c.id,
+    nome: document.getElementById('carroNome'+c.id)?.value || `Carro ${c.id+1}`,
+    capNominal: num(document.getElementById('capNominal'+c.id)?.value, c.capNominal || 60),
+    percUtil: (function(v){ v=num(v,95); return clamp(v,0,100)/100; })(document.getElementById('percUtil'+c.id)?.value),
+    socIni: num(document.getElementById('socIni'+c.id)?.value, 20),
+    socFim: num(document.getElementById('socFim'+c.id)?.value, 100),
+    etaGlobal: (function(v){ v=num(v,85); return clamp(v,1,100)/100; })(document.getElementById('etaGlobal'+c.id)?.value),
+    onboardKW: num(document.getElementById('onboardKW'+c.id)?.value, 7.4),
+    kmKWh: num(document.getElementById('kmKWh'+c.id)?.value, 5.0)
+  }));
+  
+  const placasData = placasConectadas.map(p => ({
+    id: p.id,
+    nome: document.getElementById('placaNome'+p.id)?.value || `Placa ${p.id+1}`,
+    kWp: num(document.getElementById('kWp'+p.id)?.value, p.kWp || 2.0),
+    pr: (function(v){ v=num(v,75); return clamp(v,0.01,100)/100; })(document.getElementById('pr'+p.id)?.value),
+    psh: num(document.getElementById('psh'+p.id)?.value, 5.5)
+  }));
+  
+  // Executar cálculos similares ao calcular() principal, mas apenas para componentes conectados
+  let E_bat_total = 0;
+  let E_pv_total = 0;
+  
+  const carrosCalc = carrosData.map(c => {
+    const deltaSOC = (c.socFim - c.socIni) / 100;
+    const E_bat = c.capNominal * c.percUtil * deltaSOC;
+    const E_pv = E_bat / c.etaGlobal;
+    
+    E_bat_total += E_bat;
+    E_pv_total += E_pv;
+    
+    return {
+      ...c,
+      E_bat,
+      E_pv,
+      deltaSOC
+    };
+  });
+  
+  // Calcular totais das placas
+  const kWp_total = placasData.reduce((acc, p) => acc + p.kWp, 0);
+  const pr_ponderado = placasData.length > 0 ? 
+    placasData.reduce((acc, p) => acc + p.pr * p.kWp, 0) / kWp_total : 0.75;
+  const psh_ponderado = placasData.length > 0 ?
+    placasData.reduce((acc, p) => acc + p.psh * p.kWp, 0) / kWp_total : 5.5;
+  
+  const E_dia = kWp_total * pr_ponderado * psh_ponderado;
+  const dias_gerar = E_dia > 0 ? E_pv_total / E_dia : Infinity;
+  const saldo_diario = E_dia - E_pv_total;
+  
+  const resultados = {
+    E_bat_total,
+    E_pv_total,
+    kWp_total,
+    E_dia,
+    dias_gerar,
+    saldo_diario,
+    pr_ponderado,
+    psh_ponderado
+  };
+  
+  mostrarResultadosModulo(modulo, resultados, carrosCalc);
+}
+
+// Mostrar resultados específicos do módulo no painel da direita
+function mostrarResultadosModulo(modulo, resultados, carrosCalc) {
+  const resultsPanel = document.getElementById('resultsContent');
+  if (!resultsPanel) return;
+  
+  if (Object.keys(resultados).length === 0) {
+    resultsPanel.innerHTML = `
+      <h3 style="color: var(--accent); margin: 0 0 16px;">📦 ${modulo.nome}</h3>
+      <div style="padding: 20px; text-align: center; color: var(--muted);">
+        <p>Este módulo não possui carros e placas conectados.</p>
+        <p>Use o botão de edição (✏️) para conectar componentes.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  resultsPanel.innerHTML = `
+    <h3 style="color: var(--accent); margin: 0 0 16px;">📦 ${modulo.nome}</h3>
+    
+    <div class="cards" style="grid-template-columns: 1fr;">
+      <div class="card">
+        <div class="kpi ok">${resultados.E_bat_total.toFixed(2)} <small>kWh</small></div>
+        <div class="kpi-label">Energia para a bateria</div>
+      </div>
+      
+      <div class="card">
+        <div class="kpi warn">${resultados.E_pv_total.toFixed(2)} <small>kWh</small></div>
+        <div class="kpi-label">Energia FV necessária</div>
+      </div>
+      
+      <div class="card">
+        <div class="kpi">${resultados.kWp_total.toFixed(2)} <small>kWp</small></div>
+        <div class="kpi-label">Potência instalada</div>
+      </div>
+      
+      <div class="card">
+        <div class="kpi ok">${resultados.E_dia.toFixed(2)} <small>kWh/dia</small></div>
+        <div class="kpi-label">Geração diária estimada</div>
+      </div>
+      
+      <div class="card">
+        <div class="kpi ${resultados.dias_gerar <= 1 ? 'ok' : (resultados.dias_gerar <= 2 ? 'warn' : 'err')}">${Number.isFinite(resultados.dias_gerar) ? resultados.dias_gerar.toFixed(1) : '∞'} <small>dias</small></div>
+        <div class="kpi-label">Dias para gerar energia</div>
+      </div>
+      
+      <div class="card">
+        <div class="kpi ${resultados.saldo_diario >= 0 ? 'ok' : 'err'}">${resultados.saldo_diario >= 0 ? '+' : ''}${resultados.saldo_diario.toFixed(2)} <small>kWh</small></div>
+        <div class="kpi-label">Saldo diário FV</div>
+      </div>
+    </div>
+    
+    ${carrosCalc.length > 0 ? `
+    <div class="breakdown-wrapper" style="margin-top: 16px;">
+      <h4>🔍 Detalhamento por Carro</h4>
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th>Carro</th>
+            <th>E_bat (kWh)</th>
+            <th>E_PV (kWh)</th>
+            <th>% Part.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${carrosCalc.map(c => `
+            <tr>
+              <td>${c.nome}</td>
+              <td>${c.E_bat.toFixed(2)}</td>
+              <td>${c.E_pv.toFixed(2)}</td>
+              <td>${((c.E_pv / resultados.E_pv_total) * 100).toFixed(1)}%</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
+  `;
 }
 
 // Remover componente
@@ -2652,6 +2959,8 @@ function removeComponent(type, id){
     removerCarro(id);
   } else if(type === 'placa') {
     removerPlaca(id);
+  } else if(type === 'modulo') {
+    removerModulo(id);
   }
   updateComponentList();
   updateWorkspace();
@@ -2672,7 +2981,12 @@ function editComponent(type, id){
   if (!editModal || !editModalTitle || !editModalContent) return;
   
   // Definir título do modal
-  editModalTitle.textContent = `Editar ${type === 'carro' ? 'Carro' : 'Placa'} ${id + 1}`;
+  const titles = {
+    'carro': 'Carro',
+    'placa': 'Placa', 
+    'modulo': 'Módulo de Conexão'
+  };
+  editModalTitle.textContent = `Editar ${titles[type]} ${id + 1}`;
   
   // Gerar conteúdo do modal baseado no tipo
   if (type === 'carro') {
@@ -2741,6 +3055,55 @@ function editComponent(type, id){
         <div>
           <label>Pico de Sol Hora (h/dia)</label>
           <input type="number" id="editPSH" class="field" value="${pshInput ? pshInput.value : (placa.psh || 5.5)}" step="0.1" min="1" max="12">
+        </div>
+      </div>
+    `;
+  } else if (type === 'modulo') {
+    const modulo = modulos.find(m => m.id === id);
+    if (!modulo) return;
+    
+    // Listar componentes disponíveis para conexão
+    const carrosDisponiveis = carros.map(c => {
+      const nome = document.getElementById('carroNome'+c.id)?.value || `Carro ${c.id+1}`;
+      const conectado = conexoes.some(conn => conn.moduloId === id && conn.componentType === 'carro' && conn.componentId === c.id);
+      return {id: c.id, nome, conectado};
+    });
+    
+    const placasDisponiveis = placas.map(p => {
+      const nome = document.getElementById('placaNome'+p.id)?.value || `Placa ${p.id+1}`;
+      const conectado = conexoes.some(conn => conn.moduloId === id && conn.componentType === 'placa' && conn.componentId === p.id);
+      return {id: p.id, nome, conectado};
+    });
+    
+    editModalContent.innerHTML = `
+      <div style="display: grid; gap: 16px;">
+        <div>
+          <label>Nome do Módulo</label>
+          <input type="text" id="editModuloNome" class="field" value="${modulo.nome}" placeholder="Nome do módulo">
+        </div>
+        <div>
+          <h4 style="margin: 0 0 8px; color: var(--accent);">Carros Conectados</h4>
+          <div style="max-height: 120px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.16); border-radius: 8px; padding: 8px;">
+            ${carrosDisponiveis.map(c => `
+              <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; cursor: pointer;">
+                <input type="checkbox" id="conectCarro${c.id}" ${c.conectado ? 'checked' : ''} style="margin: 0;">
+                <span style="flex: 1;">${c.nome}</span>
+              </label>
+            `).join('')}
+            ${carrosDisponiveis.length === 0 ? '<p style="color: var(--muted); font-size: 12px; margin: 0;">Nenhum carro disponível</p>' : ''}
+          </div>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 8px; color: var(--accent);">Placas Conectadas</h4>
+          <div style="max-height: 120px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.16); border-radius: 8px; padding: 8px;">
+            ${placasDisponiveis.map(p => `
+              <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; cursor: pointer;">
+                <input type="checkbox" id="conectPlaca${p.id}" ${p.conectado ? 'checked' : ''} style="margin: 0;">
+                <span style="flex: 1;">${p.nome}</span>
+              </label>
+            `).join('')}
+            ${placasDisponiveis.length === 0 ? '<p style="color: var(--muted); font-size: 12px; margin: 0;">Nenhuma placa disponível</p>' : ''}
+          </div>
         </div>
       </div>
     `;
@@ -2819,6 +3182,25 @@ function updateWorkspace(){
     // Posição inicial
     component.style.left = (50 + index * 180) + 'px';
     component.style.top = (80 + index * 20) + 'px';
+    
+    canvas.appendChild(component);
+  });
+  
+  // Adicionar módulos
+  modulos.forEach((m, index) => {
+    // Contar componentes conectados
+    const conexoesModulo = conexoes.filter(c => c.moduloId === m.id);
+    const carrosConectados = conexoesModulo.filter(c => c.componentType === 'carro').length;
+    const placasConectadas = conexoesModulo.filter(c => c.componentType === 'placa').length;
+    
+    const component = createWorkspaceComponent('modulo', m.id, m.nome, [
+      `${carrosConectados} carro(s)`,
+      `${placasConectadas} placa(s)`
+    ]);
+    
+    // Posição inicial (no centro entre carros e placas)
+    component.style.left = (250 + index * 200) + 'px';
+    component.style.top = (180 + index * 30) + 'px';
     
     canvas.appendChild(component);
   });
@@ -2919,6 +3301,41 @@ function drawConnections(){
 
 // Atualizar resultados
 function updateResults(){
+  // Se um módulo estiver selecionado, não sobrescrever seus resultados
+  if (selectedComponent && selectedComponent.type === 'modulo') {
+    return;
+  }
+  
+  // Restaurar resultados gerais no painel da direita
+  const resultsPanel = document.getElementById('resultsContent');
+  if (resultsPanel) {
+    resultsPanel.innerHTML = `
+      <h3 style="color: var(--accent); margin: 0 0 16px;">📊 Resultados Gerais</h3>
+      <div class="cards">
+        <div class="card">
+          <div class="kpi ok" id="resultEbat">— <small>kWh</small></div>
+          <div class="kpi-label">Energia para a bateria</div>
+        </div>
+        <div class="card">
+          <div class="kpi warn" id="resultEpv">— <small>kWh</small></div>
+          <div class="kpi-label">Energia FV necessária</div>
+        </div>
+        <div class="card">
+          <div class="kpi ok" id="resultEdia">— <small>kWh/dia</small></div>
+          <div class="kpi-label">Geração diária estimada</div>
+        </div>
+        <div class="card">
+          <div class="kpi" id="resultDias">— <small>dias</small></div>
+          <div class="kpi-label">Dias para gerar energia</div>
+        </div>
+        <div class="card">
+          <div class="kpi" id="resultSaldo">— <small>kWh</small></div>
+          <div class="kpi-label">Saldo diário FV</div>
+        </div>
+      </div>
+    `;
+  }
+  
   // Usar dados do cálculo existente
   const ebat = document.getElementById('kpiEbat')?.textContent || '— kWh';
   const epv = document.getElementById('kpiEpv')?.textContent || '— kWh';
@@ -2926,11 +3343,17 @@ function updateResults(){
   const dias = document.getElementById('kpiDias')?.textContent || '— dias';
   const saldo = document.getElementById('kpiDeficit')?.textContent || '— kWh';
   
-  document.getElementById('resultEbat').textContent = ebat;
-  document.getElementById('resultEpv').textContent = epv;
-  document.getElementById('resultEdia').textContent = edia;
-  document.getElementById('resultDias').textContent = dias;
-  document.getElementById('resultSaldo').textContent = saldo;
+  const resultEbat = document.getElementById('resultEbat');
+  const resultEpv = document.getElementById('resultEpv');
+  const resultEdia = document.getElementById('resultEdia');
+  const resultDias = document.getElementById('resultDias');
+  const resultSaldo = document.getElementById('resultSaldo');
+  
+  if (resultEbat) resultEbat.textContent = ebat;
+  if (resultEpv) resultEpv.textContent = epv;
+  if (resultEdia) resultEdia.textContent = edia;
+  if (resultDias) resultDias.textContent = dias;
+  if (resultSaldo) resultSaldo.textContent = saldo;
   
   // Status do sistema
   const status = document.getElementById('systemStatus');
@@ -2988,6 +3411,9 @@ renderPlacas = function(skipHarvest = false) {
 
 // Inicializar
 initLogisimInterface();
+updateComponentList();
+updateWorkspace();
+updateResults();
 // ===============================================================
 </script>
 </body>
