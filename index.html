@@ -2919,12 +2919,6 @@ function updateComponentList(){
 
 // Selecionar componente
 function selectComponent(type, id){
-  // Fechar painel de edição se estiver aberto
-  const editPanel = document.getElementById('editPanel');
-  if (editPanel) {
-    editPanel.style.display = 'none';
-  }
-  
   // Remover seleção anterior
   document.querySelectorAll('.component-item.selected').forEach(el => {
     el.classList.remove('selected');
