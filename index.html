@@ -1030,12 +1030,29 @@
     </div>
   </div>
 
+  <!-- Modal de Edição -->
+  <div id="editModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width: 600px;">
+      <button type="button" id="closeEditModalBtn" class="modal-close" title="Fechar">×</button>
+      <h3 class="modal-title" id="editModalTitle">Editar Componente</h3>
+      <div class="modal-content" id="editModalContent">
+        <!-- Conteúdo será preenchido dinamicamente -->
+      </div>
+      <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" id="cancelEditBtn" class="secondary">Cancelar</button>
+        <button type="button" id="saveEditBtn">Salvar</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 // Estilos extras do modal injetados via JS/CSS inline para manter tudo em um arquivo
 (function(){
   const style = document.createElement('style');
   style.textContent = `
   .modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,10,25,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:100000;}
+  #editModal{z-index:150000;}
+  #editModal.show{display:flex !important;}
   .modal-box{width:min(780px,92vw);max-height:80vh;overflow:auto;background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));border:1px solid rgba(255,255,255,0.22);border-radius:20px;box-shadow:0 18px 60px -8px rgba(0,0,0,0.55);padding:30px 26px 34px;position:relative;}
   .modal-title{margin:0 0 18px;font-size:22px;letter-spacing:.5px;color:var(--accent);}
   .modal-close{position:absolute;top:10px;right:12px;background:transparent;border:none;color:var(--err);font-size:26px;cursor:pointer;line-height:1;padding:2px 8px;border-radius:10px;}
@@ -1145,6 +1162,119 @@ function autoFillModelName(tipo){
       }
     }
   }
+}
+
+// Inicializar modal de edição
+function initEditModal(){
+  const modal = document.getElementById('editModal');
+  const closeBtn = document.getElementById('closeEditModalBtn');
+  const cancelBtn = document.getElementById('cancelEditBtn');
+  const saveBtn = document.getElementById('saveEditBtn');
+  
+  if(!modal || !closeBtn || !cancelBtn || !saveBtn) {
+    showToast('Erro: Não foi possível inicializar modal de edição', 'err', 3000);
+    return;
+  }
+  
+  const close = () => { 
+    modal.style.display = 'none'; 
+    modal.classList.remove('show');
+    document.body.classList.remove('modal-open'); 
+  };
+  
+  // Event listeners
+  closeBtn.addEventListener('click', close);
+  cancelBtn.addEventListener('click', close);
+  modal.addEventListener('click', (e) => { 
+    if(e.target === modal) close(); 
+  });
+  document.addEventListener('keydown', (e) => { 
+    if(e.key === 'Escape' && modal.style.display === 'flex') close(); 
+  });
+  
+  // Função de salvar
+  saveBtn.addEventListener('click', () => {
+    const type = modal.dataset.editType;
+    const id = parseInt(modal.dataset.editId);
+    
+    if (type === 'carro') {
+      const nome = document.getElementById('editCarroNome').value.trim();
+      const cap = parseFloat(document.getElementById('editCapNominal').value);
+      const onboard = parseFloat(document.getElementById('editOnboardKW').value);
+      const efic = parseFloat(document.getElementById('editKmKWh').value);
+      const percUtil = parseFloat(document.getElementById('editPercUtil').value) / 100;
+      
+      // Validação básica
+      if (!nome || isNaN(cap) || isNaN(onboard) || isNaN(efic) || isNaN(percUtil)) {
+        showToast('Por favor, preencha todos os campos corretamente', 'err', 3000);
+        return;
+      }
+      
+      // Aplicar alterações aos campos originais
+      const nomeInput = document.getElementById('carroNome' + id);
+      const capInput = document.getElementById('capNominal' + id);
+      const onboardInput = document.getElementById('onboardKW' + id);
+      const eficInput = document.getElementById('kmKWh' + id);
+      const percUtilInput = document.getElementById('percUtil' + id);
+      
+      if (nomeInput) nomeInput.value = nome;
+      if (capInput) capInput.value = cap;
+      if (onboardInput) onboardInput.value = onboard;
+      if (eficInput) eficInput.value = efic;
+      if (percUtilInput) percUtilInput.value = percUtil;
+      
+      // Atualizar o objeto carro
+      const carro = carros.find(c => c.id === id);
+      if (carro) {
+        carro.capNominal = cap;
+        carro.onboardKW = onboard;
+        carro.kmKWh = efic;
+        carro.percUtil = percUtil;
+      }
+      
+      showToast(`Carro ${id + 1} atualizado com sucesso!`, 'ok', 2000);
+      
+    } else if (type === 'placa') {
+      const nome = document.getElementById('editPlacaNome').value.trim();
+      const kWp = parseFloat(document.getElementById('editKWp').value);
+      const pr = parseFloat(document.getElementById('editPR').value) / 100;
+      const psh = parseFloat(document.getElementById('editPSH').value);
+      
+      // Validação básica
+      if (!nome || isNaN(kWp) || isNaN(pr) || isNaN(psh)) {
+        showToast('Por favor, preencha todos os campos corretamente', 'err', 3000);
+        return;
+      }
+      
+      // Aplicar alterações aos campos originais
+      const nomeInput = document.getElementById('placaNome' + id);
+      const kWpInput = document.getElementById('kWp' + id);
+      const prInput = document.getElementById('pr' + id);
+      const pshInput = document.getElementById('psh' + id);
+      
+      if (nomeInput) nomeInput.value = nome;
+      if (kWpInput) kWpInput.value = kWp;
+      if (prInput) prInput.value = pr;
+      if (pshInput) pshInput.value = psh;
+      
+      // Atualizar o objeto placa
+      const placa = placas.find(p => p.id === id);
+      if (placa) {
+        placa.kWp = kWp;
+        placa.pr = pr;
+        placa.psh = psh;
+      }
+      
+      showToast(`Placa ${id + 1} atualizada com sucesso!`, 'ok', 2000);
+    }
+    
+    // Fechar modal e atualizar interface
+    close();
+    updateComponentList();
+    updateWorkspace();
+    updateResults();
+    calcular(); // Recalcular resultados
+  });
 }
 
 // Ordenação da tabela per-car
@@ -2267,6 +2397,7 @@ updateSavedConfigs();
 updateSavedCarModels();
 updateSavedPlacaModels();
 initSaveModal();
+initEditModal();
 calcular();
 
 // UI dinâmica para campo de nome da configuração
@@ -2527,11 +2658,102 @@ function removeComponent(type, id){
   updateResults();
 }
 
-// Editar componente (modal simples)
+// Editar componente (modal de edição)
 function editComponent(type, id){
-  // Por enquanto, apenas seleciona - pode ser expandido para modal de edição
-  selectComponent(type, id);
-  showToast(`Editando ${type} ${id+1}`, 'ok', 1500);
+  const editModal = document.getElementById('editModal');
+  const editModalTitle = document.getElementById('editModalTitle');
+  const editModalContent = document.getElementById('editModalContent');
+  
+  if (!editModal || !editModalTitle || !editModalContent) {
+    showToast('Erro: Modal de edição não encontrado', 'err', 3000);
+    return;
+  }
+  
+  if (!editModal || !editModalTitle || !editModalContent) return;
+  
+  // Definir título do modal
+  editModalTitle.textContent = `Editar ${type === 'carro' ? 'Carro' : 'Placa'} ${id + 1}`;
+  
+  // Gerar conteúdo do modal baseado no tipo
+  if (type === 'carro') {
+    const carro = carros.find(c => c.id === id);
+    if (!carro) return;
+    
+    const nomeInput = document.getElementById('carroNome' + id);
+    const capInput = document.getElementById('capNominal' + id);
+    const onboardInput = document.getElementById('onboardKW' + id);
+    const eficInput = document.getElementById('kmKWh' + id);
+    const percUtilInput = document.getElementById('percUtil' + id);
+    
+    editModalContent.innerHTML = `
+      <div style="display: grid; gap: 16px;">
+        <div>
+          <label>Nome do Carro</label>
+          <input type="text" id="editCarroNome" class="field" value="${nomeInput ? nomeInput.value : `Carro ${id + 1}`}" placeholder="Nome do carro">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label>Capacidade Nominal (kWh)</label>
+            <input type="number" id="editCapNominal" class="field" value="${capInput ? capInput.value : (carro.capNominal || 60)}" step="0.1" min="1">
+          </div>
+          <div>
+            <label>Potência Onboard (kW)</label>
+            <input type="number" id="editOnboardKW" class="field" value="${onboardInput ? onboardInput.value : (carro.onboardKW || 7.4)}" step="0.1" min="0.1">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label>Eficiência (km/kWh)</label>
+            <input type="number" id="editKmKWh" class="field" value="${eficInput ? eficInput.value : (carro.kmKWh || 5.0)}" step="0.1" min="1">
+          </div>
+          <div>
+            <label>% Utilização Bateria</label>
+            <input type="number" id="editPercUtil" class="field" value="${percUtilInput ? parseFloat(percUtilInput.value) * 100 : ((carro.percUtil || 0.8) * 100)}" step="1" min="10" max="100">
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (type === 'placa') {
+    const placa = placas.find(p => p.id === id);
+    if (!placa) return;
+    
+    const nomeInput = document.getElementById('placaNome' + id);
+    const kWpInput = document.getElementById('kWp' + id);
+    const prInput = document.getElementById('pr' + id);
+    const pshInput = document.getElementById('psh' + id);
+    
+    editModalContent.innerHTML = `
+      <div style="display: grid; gap: 16px;">
+        <div>
+          <label>Nome da Placa</label>
+          <input type="text" id="editPlacaNome" class="field" value="${nomeInput ? nomeInput.value : `Placa ${id + 1}`}" placeholder="Nome da placa">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label>Potência Instalada (kWp)</label>
+            <input type="number" id="editKWp" class="field" value="${kWpInput ? kWpInput.value : (placa.kWp || 2.0)}" step="0.01" min="0.01">
+          </div>
+          <div>
+            <label>Performance Ratio (%)</label>
+            <input type="number" id="editPR" class="field" value="${prInput ? parseFloat(prInput.value) * 100 : ((placa.pr || 0.75) * 100)}" step="1" min="50" max="95">
+          </div>
+        </div>
+        <div>
+          <label>Pico de Sol Hora (h/dia)</label>
+          <input type="number" id="editPSH" class="field" value="${pshInput ? pshInput.value : (placa.psh || 5.5)}" step="0.1" min="1" max="12">
+        </div>
+      </div>
+    `;
+  }
+  
+  // Armazenar dados para salvamento
+  editModal.dataset.editType = type;
+  editModal.dataset.editId = id;
+  
+  // Mostrar modal
+  editModal.style.display = 'flex';
+  editModal.classList.add('show');
+  document.body.classList.add('modal-open');
 }
 
 // Inicializar workspace
