@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calculadora Solar para Carro Elétrico</title>
+<style>
+  :root{
+    --bg: #0b1020;
+    --card: rgba(255,255,255,0.06);
+    --glass: rgba(255,255,255,0.08);
+    --text: #ecf0ff;
+    --muted: #c7cbee;
+    --accent: #7ccfff;
+    --accent-2: #a18cff;
+    --ok: #7dffa7;
+    --warn: #ffd37d;
+    --err: #ff8f8f;
+    --shadow: 0 10px 30px rgba(0,0,0,0.45);
+    --radius: 16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    color:var(--text);
+    background:
+      radial-gradient(1200px 800px at 20% -10%, #2a3baa 0%, transparent 60%),
+      radial-gradient(1000px 700px at 120% 10%, #26a3c8 0%, transparent 55%),
+      radial-gradient(900px 600px at 50% 120%, #8e46ff 0%, transparent 45%),
+      var(--bg);
+    background-attachment: fixed;
+  }
+  header{
+    padding: 28px 20px 8px;
+    text-align:center;
+  }
+  /* ================= SIMULADOR (NOVO) ================= */
+  body.sim-light{
+    --bg:#f7f7f4;
+    --card:#ffffffee;
+    --glass:rgba(255,255,255,0.75);
+    --text:#222831;
+    --muted:#626b7a;
+    --accent:#2d6ae0;
+    --accent-2:#7b4dff;
+    --ok:#129c55;
+    --warn:#b58900;
+    --err:#d93030;
+    background:linear-gradient(160deg,#fafaf8 0%,#f0f2f7 60%,#e7ebf5 100%);
+    color:var(--text);
+  }
+  .sim-toolbar{
+    position:sticky;top:0;z-index:50000;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 18px 10px;background:linear-gradient(90deg,var(--glass),rgba(255,255,255,0.55));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,0.08);
+  }
+  .sim-toolbar .sim-brand{font-weight:700;font-size:15px;letter-spacing:.5px;color:var(--accent);margin-right:6px;}
+  .sim-toolbar .sim-left{display:flex;align-items:center;gap:10px;}
+  .sim-toolbar .sim-right{display:flex;align-items:center;gap:8px;}
+  .tb-btn{background:var(--card);border:1px solid rgba(0,0,0,0.12);color:var(--text);font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.08);transition:.15s background,.15s box-shadow;position:relative;}
+  .tb-btn:hover{background:rgba(0,0,0,0.05);box-shadow:0 4px 14px -4px rgba(0,0,0,0.18);} 
+  body.sim-light .tb-btn{background:#fff;}
+  .sim-group{position:relative;}
+  .tb-dropdown{position:absolute;top:calc(100% + 6px);left:0;background:var(--card);border:1px solid rgba(0,0,0,0.15);border-radius:10px;padding:6px;display:none;flex-direction:column;min-width:160px;box-shadow:0 12px 34px -8px rgba(0,0,0,0.25);}
+  .tb-dropdown.open{display:flex;}
+  .tb-dropdown button{all:unset;cursor:pointer;padding:8px 10px;border-radius:8px;font-size:13px;color:var(--text);}
+  .tb-dropdown button:hover{background:rgba(0,0,0,0.07);} 
+  .legacy-add{display:none!important;}
+  /* Painel de diagrama */
+  #diagramPanel{position:fixed;top:0;right:0;width:420px;max-width:90vw;height:100dvh;background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.4));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-left:1px solid rgba(0,0,0,0.1);box-shadow:-6px 0 30px -10px rgba(0,0,0,0.3);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.65,.05,.36,1);z-index:60000;}
+  #diagramPanel.open{transform:translateX(0);}
+  #diagramPanel .diag-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;font-weight:600;color:var(--accent);border-bottom:1px solid rgba(0,0,0,0.08);}
+  #diagramPanel button.close-diag{background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--err);padding:4px 6px;border-radius:8px;}
+  #diagramPanel button.close-diag:hover{background:rgba(0,0,0,0.07);} 
+  #diagramCanvas{flex:1;overflow:auto;padding:18px 18px 40px;font-size:12px;}
+  .node-box{--c:var(--accent);border:1px solid var(--c);border-radius:10px;padding:8px 10px;margin:4px;min-width:120px;background:linear-gradient(135deg,var(--card),rgba(255,255,255,0.5));box-shadow:0 4px 12px -4px rgba(0,0,0,0.25);position:relative;}
+  .node-box.placa{--c:#f59e0b;}
+  .node-box.carro{--c:#2563eb;}
+  .node-box .mini{font-size:10px;opacity:.75;margin-top:2px;}
+  .diagram-grid{display:grid;grid-template-columns:1fr;gap:14px;}
+  .diag-cluster{display:flex;flex-wrap:wrap;align-items:flex-start;}
+  .diag-section-title{font-size:11px;font-weight:700;letter-spacing:.5px;margin:2px 4px 4px;color:var(--muted);text-transform:uppercase;}
+  .diag-connector{height:2px;background:linear-gradient(90deg,var(--accent),var(--accent-2));margin:4px 0 10px;border-radius:2px;}
+  .diagram-empty{font-size:12px;color:var(--muted);padding:10px 4px;}
+  @media (max-width:800px){#diagramPanel{width:360px;}}
+  /* ===================================================== */
+  h1{
+    margin:0;
+    font-size: clamp(28px, 4vw, 40px);
+    letter-spacing: .4px;
+  }
+  .subtitle{
+    margin-top:8px;
+    color:var(--muted);
+    font-size: clamp(14px, 2.2vw, 16px);
+  }
+
+  .container{
+    width:min(1100px, 92vw);
+    margin: 28px auto 80px;
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 980px){
+    .container{grid-template-columns:1fr}
+  }
+
+  .panel, .results{
+    background: linear-gradient(180deg, var(--glass), transparent 140%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+
+  .section-title{
+    font-size: 16px;
+    letter-spacing: .3px;
+    margin: 8px 4px 12px;
+    color: var(--accent);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width:680px){ .grid{grid-template-columns:1fr} }
+
+  .cards-dyn {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 8px;
+  }
+  .card-dyn {
+    background: var(--card);
+    border: 1.5px solid rgba(255,255,255,0.14);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+    padding: 18px 16px 10px 16px;
+    position: relative;
+    transition: box-shadow .2s;
+  }
+  .card-dyn:hover {
+    box-shadow: 0 8px 32px rgba(124,207,255,0.12);
+    border-color: var(--accent);
+  }
+  .card-dyn .card-title {
+    font-size: 15px;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: .2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-dyn .remove-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    color: var(--err);
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 8px;
+    transition: background .2s;
+  }
+  .card-dyn .remove-btn:hover {
+    background: rgba(255,143,143,0.12);
+  }
+  .card-dyn .dup-btn {
+    position:absolute;
+    top:12px;
+    right:48px;
+    background:transparent;
+    color: var(--accent);
+    border:none;
+    font-size:15px;
+    cursor:pointer;
+    font-weight:bold;
+    padding:2px 8px;
+    border-radius:8px;
+    transition: background .2s;
+  }
+  .card-dyn .dup-btn:hover{background:rgba(124,207,255,0.15);}
+
+  label{
+    font-size: 13px;
+    color: var(--muted);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    margin-bottom:6px;
+    gap:10px;
+  }
+  .hint{
+    font-size: 12px;
+    color: var(--muted);
+    opacity:.85;
+  }
+  .field{
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px;
+    padding: 12px 12px;
+    color: var(--text);
+    width: 100%;
+    outline:none;
+  }
+  .field:focus{
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,207,255,0.15);
+  }
+  .field.invalid{border-color:var(--err)!important;box-shadow:0 0 0 3px rgba(255,143,143,0.25)!important;}
+  .err-msg{font-size:10px;color:var(--err);margin:3px 2px 0;display:none;}
+  .unit{
+    opacity:.8; font-size:12px;
+  }
+
+  .actions{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  button{
+    appearance: none;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 16px;
+    cursor:pointer;
+    color:#0b1020;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    font-weight: 700;
+    letter-spacing: .2px;
+    box-shadow: var(--shadow);
+  }
+  button.secondary{
+    background: transparent;
+    color: var(--text);
+    border:1px solid rgba(255,255,255,0.2);
+  }
+
+  .results{
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+  }
+  .cards{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width:680px){ .cards{grid-template-columns:1fr} }
+  .card{
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 14px;
+    padding: 16px;
+    min-height: 106px;
+  }
+  .kpi{
+    font-size: clamp(22px, 3.6vw, 30px);
+    font-weight: 800;
+    line-height: 1.15;
+  }
+  .kpi small{font-weight:600; font-size: 12px; opacity:.85}
+  .kpi-label{
+    color: var(--muted);
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  /* tabela de detalhamento */
+  .breakdown-wrapper{margin-top:10px;background:var(--card);border:1px solid rgba(255,255,255,0.14);border-radius:14px;padding:14px 16px;}
+  .breakdown-wrapper h4{margin:0 0 10px;font-size:14px;letter-spacing:.3px;color:var(--accent);display:flex;align-items:center;gap:6px;}
+  .breakdown-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .breakdown-table th{text-align:left;font-weight:600;color:var(--muted);padding:6px 6px;border-bottom:1px solid rgba(255,255,255,0.15);}
+  .breakdown-table td{padding:6px 6px;border-bottom:1px dashed rgba(255,255,255,0.08);}
+  .breakdown-table tbody tr:last-child td{border-bottom:none;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,0.08);font-size:10px;font-weight:600;letter-spacing:.5px;}
+  .seq-total{margin-top:6px;font-size:11px;color:var(--muted);}  
+  .note{
+    font-size: 12px; color: var(--muted);
+  }
+  .info-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:11px;font-weight:700;border-radius:50%;background:rgba(255,255,255,0.12);color:var(--accent);margin-left:6px;cursor:pointer;position:relative;}
+  .info-icon:hover{background:rgba(124,207,255,0.25);}
+  .help-pop{position:fixed;max-width:280px;background:#111726;border:1px solid rgba(124,207,255,0.4);padding:10px 12px;border-radius:12px;box-shadow:0 10px 32px -6px rgba(0,0,0,0.55);font-size:11.5px;line-height:1.35;z-index:1000000;animation:fadeIn .15s ease;}
+  .help-pop h5{margin:0 0 4px;font-size:12px;color:var(--accent);letter-spacing:.4px;}
+  .help-pop .close-h{position:absolute;top:4px;right:6px;background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .ok{ color: var(--ok); }
+  .warn{ color: var(--warn); }
+  .err{ color: var(--err); }
+
+  details{
+    background: rgba(255,255,255,0.05);
+    border: 1px dashed rgba(255,255,255,0.2);
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+  summary{
+    cursor:pointer;
+    color:var(--muted);
+    font-weight:600;
+    margin: -4px 0 6px;
+  }
+
+  footer{
+    text-align:center;
+    padding: 32px 12px 40px;
+    color: var(--muted);
+    font-weight:600;
+  }
+  .brand{
+    display:inline-block;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.18);
+  }
+  /* Toasts e impressão */
+  .toast-container{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;gap:10px;z-index:200000;}
+  .toast{background:linear-gradient(135deg,var(--glass),rgba(255,255,255,0.05));border:1px solid rgba(255,255,255,0.2);padding:10px 14px;border-radius:12px;font-size:12.5px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 20px -4px rgba(0,0,0,0.6);animation:fadeIn .25s ease;display:flex;align-items:center;gap:8px;min-width:220px;max-width:320px;}
+  .toast.ok{border-color:rgba(125,255,167,0.45);} .toast.warn{border-color:rgba(255,211,125,0.45);} .toast.err{border-color:rgba(255,143,143,0.55);}
+  .toast button{background:transparent;color:var(--muted);border:none;font-size:14px;margin-left:auto;cursor:pointer;padding:2px 6px;border-radius:8px;}
+  .toast button:hover{background:rgba(255,255,255,0.08);} 
+  @media print{
+    body{background:#fff;color:#000;font:12px Arial,sans-serif;}
+    header,.panel .actions button:not(#printBtn), #openSaveModalBtn, .modal-overlay, footer, .info-icon, details, #importFile{display:none!important;}
+    .panel,.results,.card,.breakdown-wrapper{background:#fff;backdrop-filter:none;box-shadow:none;}
+    .card,.breakdown-wrapper{border:1px solid #555!important;}
+  }
+</style>
+</head>
+<body>
+  <!-- Toolbar estilo simulador -->
+  <div class="sim-toolbar" id="simToolbar">
+    <div class="sim-left">
+      <span class="sim-brand">EV Solar Sim</span>
+      <div class="sim-group">
+        <button class="tb-btn" id="addMenuBtn">➕ Adicionar</button>
+        <div class="tb-dropdown" id="addDropdown">
+          <button type="button" data-add="carro">Carro</button>
+          <button type="button" data-add="placa">Placa (Array FV)</button>
+        </div>
+      </div>
+      <button class="tb-btn" id="toggleDiagramBtn" title="Mostrar/ocultar diagrama">🗂️ Diagrama</button>
+      <button class="tb-btn" id="quickCalcBtn" title="Recalcular (Ctrl+R)">⚙️ Calcular</button>
+      <button class="tb-btn" id="quickClearBtn" title="Limpar tudo">🧹 Limpar</button>
+    </div>
+    <div class="sim-right">
+      <button class="tb-btn" id="themeToggleBtn" title="Alternar tema">🌗 Tema</button>
+      <button class="tb-btn" id="openSaveModalBtn_clone" title="Salvar / Modelos">💾 Salvar</button>
+      <div class="sim-group">
+        <button class="tb-btn" id="exportMenuBtn">📤 Exportar</button>
+        <div class="tb-dropdown" id="exportDropdown">
+          <button type="button" id="exportJsonToolbar">Exportar JSON</button>
+          <button type="button" id="importJsonToolbar">Importar JSON</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Painel lateral de diagrama -->
+  <div id="diagramPanel" aria-hidden="true">
+    <div class="diag-head">Diagrama do Sistema <button class="close-diag" id="closeDiagramBtn" title="Fechar">×</button></div>
+    <div id="diagramCanvas"></div>
+  </div>
+  <header>
+    <h1>Calculadora Solar &nbsp;→&nbsp; Carro Elétrico</h1>
+    <div class="subtitle">Descubra quanta energia seu sistema fotovoltaico precisa gerar e o tempo para carregar seu EV.</div>
+  </header>
+
+  <div class="container">
+    <!-- Entrada -->
+    <div class="panel">
+  <div class="section-title">⚡ Especificações do Carro</div>
+  <div id="carrosContainer"></div>
+  <div style="display:flex; gap:8px; margin:6px 2px 14px; flex-wrap:wrap;">
+    <button type="button" class="secondary" style="padding:8px 14px;font-size:12px;" onclick="adicionarCarro()">+ Adicionar Carro</button>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:14px;margin:10px 4px 22px;align-items:flex-start;">
+    <div style="flex:1;min-width:180px;display:flex;flex-direction:column;">
+      <label style="font-size:12px;">Pontos de carga simultâneos <span class="unit">#</span></label>
+      <input class="field" id="numChargers" type="number" min="1" step="1" value="1">
+      <div class="hint" style="font-size:10px;margin-top:4px;">Qtd. de veículos que podem carregar ao mesmo tempo (divide potência FV entre eles).</div>
+    </div>
+    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;">
+      <label style="font-size:12px;">Fator médio taper (≥80% SOC)<span class="unit"> (0-1)</span></label>
+      <input class="field" id="taperFactorInput" type="number" min="0.1" max="1" step="0.05" value="0.55">
+      <div class="hint" style="font-size:10px;margin-top:4px;">Potência média relativa na faixa 80–100% (1 = sem redução). Default 0.55.</div>
+    </div>
+    <div style="flex:1;min-width:160px;display:flex;flex-direction:column;">
+      <label style="font-size:12px;">Tarifa energia <span class="unit">R$/kWh</span></label>
+      <input class="field" id="tarifaInput" type="number" min="0" step="0.01" value="0.95">
+      <div class="hint" style="font-size:10px;margin-top:4px;">Para custo diário de déficit.</div>
+    </div>
+    <div style="flex:1;min-width:170px;display:flex;flex-direction:column;">
+      <label style="font-size:12px;">Modo cálculo</label>
+      <select id="autoCalcMode" class="field" style="padding:11px 12px;">
+        <option value="manual" selected>Manual</option>
+        <option value="auto">Auto</option>
+      </select>
+      <div class="hint" style="font-size:10px;margin-top:4px;">Auto recalcula ao digitar.</div>
+    </div>
+  </div>
+  <div class="section-title" style="margin-top:16px;">☀️ Sistema Fotovoltaico</div>
+  <div id="placasContainer"></div>
+  <div style="display:flex; gap:8px; margin:6px 2px 14px; flex-wrap:wrap;">
+    <button type="button" class="secondary" style="padding:8px 14px;font-size:12px;" onclick="adicionarPlaca()">+ Adicionar Placa</button>
+  </div>
+      <div class="actions">
+        <button id="calcBtn">Calcular</button>
+        <button class="secondary" id="resetBtn">Limpar</button>
+        <button class="secondary" type="button" onclick="exportarJSON()">Exportar JSON</button>
+        <button class="secondary" type="button" onclick="document.getElementById('importFile').click()">Importar JSON</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importarJSON(this)">
+      </div>
+      <div style="margin:10px 2px 4px; display:flex; flex-wrap:wrap; gap:18px; align-items:center; font-size:11px; color:var(--muted);">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" id="debugMode" style="accent-color:var(--accent); width:16px; height:16px;"> Modo debug (logs no console)
+        </label>
+        <span style="opacity:.8;">Use para comparar com cálculo manual. Desmarque para silenciar.</span>
+      </div>
+      <!-- Botão único para abrir modal de salvar/modelos -->
+      <div style="margin-top:18px; display:flex; justify-content:flex-end;">
+        <button id="openSaveModalBtn" type="button" style="min-width:140px;">💾 Salvar / Modelos</button>
+      </div>
+      <details style="margin-top:12px">
+        <summary>Como calculamos?</summary>
+        <div class="hint" style="font-size:11.5px;line-height:1.45;">
+          <p><b>1. Energia útil na bateria (ΔSOC)</b><br>
+            E_bat = Cap_nominal × %Utilizável × (SOC_final − SOC_inicial)<br>
+            Onde %Utilizável = Cap_utilizável / Cap_nominal.</p>
+          <p><b>2. Energia FV bruta necessária</b><br>
+            E_PV = E_bat / η_global_carro<br>
+            (η_global_carro = cadeia FV/DC→AC→carregador→bateria para cada carro).</p>
+          <p><b>3. Geração diária de cada array</b><br>
+            Para cada array i: E_dia_i = kWp_i × PSH_i × PR_i × η_array_i<br>
+            (PR_i contempla perdas gerais: temperatura, mismatch, sujeira, conversão principal).<br>
+            (η_array_i opcional adiciona perdas específicas não já contidas no PR; se não usar deixe 100%).</p>
+          <p><b>4. Agregação dos arrays</b><br>
+            kWp_total = Σ kWp_i<br>
+            Fator_efetivo (PR×η)_pond = Σ(PR_i × η_array_i × kWp_i) / Σ kWp_i<br>
+            PSH_pond = Σ(PSH_i × kWp_i)/Σ kWp_i<br>
+            E_dia_total = kWp_total × PSH_pond × (PR×η)_pond</p>
+          <p><b>5. Dias e horas equivalentes</b><br>
+            Dias = E_PV_total / E_dia_total<br>
+            Horas_equiv_sol = E_PV_total / (kWp_total × (PR×η)_pond)</p>
+          <p><b>6. Potência efetiva e limite teórico</b><br>
+            P_FV_efetiva ≈ kWp_total × (PR×η)_pond<br>
+            P_lim = min( Σ P_onboard , P_FV_efetiva )<br>
+            t_min ≈ E_bat_total / P_lim (ignora taper & variação solar).</p>
+          <p><b>7. Saldo diário</b><br>
+            Saldo = E_dia_total − E_PV_total (positivo = excedente, negativo = déficit).</p>
+          <p style="margin-top:10px;"><b>Unidades & Cuidados</b><br>
+            • Potências de módulo em W convertidas para kW: (N_módulos × P_mod_W)/1000 = kWp.<br>
+            • PR e eficiências internos em fração (0–1); exibidos em %.<br>
+            • Não duplique perdas: se PR já inclui tudo, mantenha η_array = 100%.</p>
+          <p style="margin-top:10px;"><b>Fontes / Referências resumidas</b><br>
+            1. Conceito de PR: IEC 61724 / literatura fotovoltaica (E_real / (P_instalada × H_ref)).<br>
+            2. Uso de PSH: prática de dimensionamento solar (horas equivalentes de pico).<br>
+            3. Cadeia de eficiência de carregamento EV: perdas em inversor, retificação, BMS (white papers fabricantes & medições de campo).<br>
+            4. Conversão W → kW e energia: base SI (E = P × t).<br>
+            5. Abordagem de taper 80–100% SOC: comportamento típico de BMS Li-ion (curvas de carga CC/CV publicadas por OEMs).</p>
+          <p style="margin-top:6px;">(Resumo didático: ver IEC 61724 para PR; guias de dimensionamento FV comerciais para PSH e perdas; documentação técnica de fabricantes EV/inversores para eficiências.)</p>
+        </div>
+      </details>
+    </div>
+    <!-- Resultados -->
+    <div class="results">
+      <div class="section-title">📊 Resultados</div>
+      <div class="cards">
+        <div class="card">
+          <div class="kpi" id="kpiEbat">—</div>
+          <div class="kpi-label">Energia para a bateria <span class="info-icon" onclick="showHelp(event,'E_bat','Energia efetiva que entra na bateria para elevar o SOC: Capacidade_nominal × %Utilizável × (SOC_final - SOC_inicial). Não inclui perdas da cadeia FV→bateria.')">i</span></div>
+          <div class="note">Entre SOC inicial e final.</div>
+        </div>
+        <div class="card">
+          <div class="kpi" id="kpiEpv">—</div>
+          <div class="kpi-label">Energia FV necessária <span class="info-icon" onclick="showHelp(event,'E_PV','Energia que precisa ser produzida antes das perdas (ou retirada da rede) para entregar a energia útil na bateria: E_PV = E_bat / η_global.')">i</span></div>
+          <div class="note">Considerando a eficiência global.</div>
+        </div>
+        <div class="card">
+          <div class="kpi" id="kpiEdia">—</div>
+          <div class="kpi-label">Geração diária estimada <span class="info-icon" onclick="showHelp(event,'E_dia','Energia média produzida por dia: kWp_total × PR_ponderado × PSH_ponderado (médias).')">i</span></div>
+          <div class="note">kWp × PSH × PR.</div>
+        </div>
+        <div class="card">
+          <div class="kpi" id="kpiDias">—</div>
+          <div class="kpi-label">Dias para gerar energia <span class="info-icon" onclick="showHelp(event,'Dias','Tempo em dias médios de geração FV para acumular E_PV_total: Dias = E_PV_total / E_dia.')">i</span></div>
+          <div class="note">Média — varia com clima/estação.</div>
+        </div>
+        <div class="card">
+          <div class="kpi" id="kpiHoras">—</div>
+          <div class="kpi-label">Horas de sol pleno equivalentes <span class="info-icon" onclick="showHelp(event,'Horas FV eq.','Soma de horas equivalentes a potência de pico (PR aplicado) para gerar E_PV_total: Horas = E_PV_total / (kWp_total × PR).')">i</span></div>
+          <div class="note">Total acumulado necessário.</div>
+        </div>
+        <div class="card">
+          <div class="kpi" id="kpiTmin">—</div>
+          <div class="kpi-label">Tempo mínimo teórico <span class="info-icon" onclick="showHelp(event,'t_min','Limite ideal assumindo potência constante e sem taper: t_min = E_bat_total / min(ΣP_onboard, kWp_total × PR).')">i</span></div>
+          <div class="note">Limitado por potência (irrealista/idealizado).</div>
+        </div>
+        <div class="card" id="cardDeficit">
+          <div class="kpi" id="kpiDeficit">—</div>
+          <div class="kpi-label">Saldo diário FV <span class="info-icon" onclick="showHelp(event,'Saldo diário','Compara E_dia com E_PV_total: positivo = excedente; negativo = déficit (rede).')">i</span></div>
+          <div class="note" id="deficitNote">—</div>
+        </div>
+      </div>
+      <div id="alerts" style="margin-top:8px; display:none;">
+        <div class="note" id="alertText"></div>
+      </div>
+      <div class="breakdown-wrapper" id="perCarWrapper" style="display:none;">
+  <h4>🔍 Detalhamento por Carro <span class="tag">estimativas</span> <span class="info-icon" onclick="showHelp(event,'Detalhamento','Tabela que decompõe por veículo: energia útil (E_bat), energia FV bruta exigida (E_PV), horas equivalentes de sol e tempo mínimo limitado por potência. Útil para identificar gargalos individuais.')">i</span></h4>
+        <div style="overflow-x:auto;">
+          <table class="breakdown-table" id="perCarTable">
+            <thead>
+              <tr>
+  <th class="sortable" data-sort="nome">Carro</th>
+  <th class="sortable" data-sort="E_bat">E_bat (kWh) <span class="info-icon" onclick="showHelp(event,'E_bat','Energia que entra na bateria (após perdas).')">i</span></th>
+  <th class="sortable" data-sort="E_pv">E_PV (kWh) <span class="info-icon" onclick="showHelp(event,'E_PV','Energia gerada/fornecida antes das perdas para este carro.')">i</span></th>
+  <th class="sortable" data-sort="participacao">% Part. <span class="info-icon" onclick="showHelp(event,'Participação','Percentual da energia FV bruta (E_PV) deste carro sobre o total necessário.')">i</span></th>
+  <th class="sortable" data-sort="horasFV">Horas FV eq. <span class="info-icon" onclick="showHelp(event,'Horas FV eq.','Horas de pico necessárias para gerar E_PV do carro: E_PV_car / (kWp_total × PR).')">i</span></th>
+  <th class="sortable" data-sort="t_lim">t_lim (h) <span class="info-icon" onclick="showHelp(event,'t_lim','Tempo mínimo limitado por min(P_onboard_car, potência FV efetiva).')">i</span></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="seq-total" id="seqTotalInfo"></div>
+        <details style="margin-top:6px;">
+          <summary style="font-size:11px;cursor:pointer;color:var(--muted);">Notas</summary>
+          <div style="font-size:11px;line-height:1.4;color:var(--muted);margin-top:4px;">
+            Horas FV eq. = E_PV_car / (kWp_total × PR_médio). t_lim carga = E_bat_car / min(P_onboard_car, kWp_total × PR_médio).<br>
+            A soma sequencial assume um único ponto de carga atendendo carros em série. Desconsidera redução de potência em SOC alto.
+          </div>
+        </details>
+      </div>
+      <details style="margin-top:4px">
+        <summary>Notas & Limitações</summary>
+        <div class="hint">
+          <ul>
+            <li>Valores de PR e PSH são médias; clima e estação alteram bastante.</li>
+            <li>Perto de 80–100% de SOC, o BMS reduz a potência de carga.</li>
+            <li>O tempo mínimo teórico assume potência constante e condições ideais.</li>
+            <li>Se o sistema for off-grid/DC direto, ajuste a eficiência global conforme o caso.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <footer>
+    <span class="brand">IoTEC Lab - UNIVALI</span>
+  </footer>
+  <footer>
+        Desenvolvido por Tiburski, Herick Betin • 2025
+  </footer>
+  <div id="toastContainer" class="toast-container"></div>
+  
+  <!-- Modal global (fora do panel para evitar stacking context) -->
+  <div id="saveModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <button type="button" id="closeSaveModalBtn" class="modal-close" title="Fechar">×</button>
+      <h3 class="modal-title">Salvar / Modelos</h3>
+      <div class="modal-content">
+        <div class="modal-block">
+          <div class="modal-block-head">
+            <span class="modal-block-title">Configurações</span>
+            <span class="count-badge" id="countConfigs">0</span>
+          </div>
+          <p class="mini-hint">Salve conjuntos completos (carros + placas) para reutilizar depois.</p>
+          <div class="modal-row">
+            <input id="configNameInput" class="field" placeholder="Nome da configuração">
+            <button id="saveConfigModalBtn" type="button">Salvar</button>
+          </div>
+          <div id="configFeedback" style="margin-top:4px;font-size:11px;display:none;"></div>
+          <div class="modal-row">
+            <select id="savedConfigs" class="flex"></select>
+            <button id="loadConfigBtn" type="button">Carregar</button>
+            <button id="deleteConfigBtn" type="button">Excluir</button>
+          </div>
+        </div>
+        <div class="modal-block">
+          <div class="modal-block-head">
+            <span class="modal-block-title">Modelos de Carro</span>
+            <span class="count-badge" id="countCarModels">0</span>
+          </div>
+          <p class="mini-hint">Salve especificações típicas (bateria, eficiência, limites) de cada veículo.</p>
+          <div class="modal-row">
+            <input id="carModelNameInput" class="field" placeholder="Nome do modelo">
+            <select id="carSelect" title="Carro alvo"></select>
+            <button id="saveCarModelBtn" type="button">Salvar</button>
+          </div>
+          <div class="modal-row">
+            <select id="savedCarModels" class="flex"></select>
+            <select id="carSelectApply" title="Aplicar em"></select>
+            <button id="loadCarModelBtn" type="button">Aplicar</button>
+          </div>
+          <div id="carModelFeedback" style="margin-top:4px;font-size:11px;display:none;"></div>
+        </div>
+        <div class="modal-block">
+          <div class="modal-block-head">
+            <span class="modal-block-title">Modelos de Placa</span>
+            <span class="count-badge" id="countPlacaModels">0</span>
+          </div>
+          <p class="mini-hint">Guarde combinações de potência, PR e PSH para cenários diferentes.</p>
+          <div class="modal-row">
+            <input id="placaModelNameInput" class="field" placeholder="Nome do modelo">
+            <select id="placaSelect" title="Placa alvo"></select>
+            <button id="savePlacaModelBtn" type="button">Salvar</button>
+          </div>
+            <div class="modal-row">
+            <select id="savedPlacaModels" class="flex"></select>
+            <select id="placaSelectApply" title="Aplicar em"></select>
+            <button id="loadPlacaModelBtn" type="button">Aplicar</button>
+          </div>
+          <div id="placaModelFeedback" style="margin-top:4px;font-size:11px;display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Estilos extras do modal injetados via JS/CSS inline para manter tudo em um arquivo
+(function(){
+  const style = document.createElement('style');
+  style.textContent = `
+  .modal-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,10,25,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:100000;}
+  .modal-box{width:min(780px,92vw);max-height:80vh;overflow:auto;background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.04));border:1px solid rgba(255,255,255,0.22);border-radius:20px;box-shadow:0 18px 60px -8px rgba(0,0,0,0.55);padding:30px 26px 34px;position:relative;}
+  .modal-title{margin:0 0 18px;font-size:22px;letter-spacing:.5px;color:var(--accent);}
+  .modal-close{position:absolute;top:10px;right:12px;background:transparent;border:none;color:var(--err);font-size:26px;cursor:pointer;line-height:1;padding:2px 8px;border-radius:10px;}
+  .modal-close:hover{background:rgba(255,143,143,0.15);} 
+  .modal-content{display:flex;flex-direction:column;gap:26px;}
+  .modal-block{background:rgba(255,255,255,0.04);padding:14px 16px 18px;border:1px solid rgba(255,255,255,0.12);border-radius:16px;position:relative;}
+  .modal-block:before{content:"";position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(124,207,255,0.35),rgba(161,140,255,0.25) 35%,rgba(255,255,255,0.05) 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.55;}
+  .modal-block:before{pointer-events:none;}
+  .modal-block-title{font-weight:600;color:var(--accent);display:block;}
+  .modal-block-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:12px;}
+  .mini-hint{margin:4px 0 10px;font-size:11px;letter-spacing:.3px;color:var(--muted);opacity:.85;}
+  .count-badge{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#0b1020;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,0.35);}
+  .modal-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .modal-row .field, .modal-row select{flex:1;min-width:160px;}
+  .modal-row select{background:var(--card);border:1px solid rgba(255,255,255,0.18);color:var(--text);padding:12px 12px;border-radius:12px;outline:none;appearance:none;position:relative;}
+  .modal-row select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,207,255,0.15);} 
+  .modal-row button{min-width:90px;}
+  body.modal-open{overflow:hidden;}
+  @media (max-width:640px){ .modal-box{padding:24px 18px;} .modal-row{flex-direction:column;align-items:stretch;} .modal-row .field, .modal-row select, .modal-row button{width:100%;} }
+  `;
+  document.head.appendChild(style);
+})();
+
+// Utilitários
+function num(v, def=0){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : def;
+}
+function clamp(n, a, b){
+  return Math.min(Math.max(n, a), b);
+}
+function fmtKWh(x){
+  if (!Number.isFinite(x)) return '—';
+  return x >= 100 ? x.toFixed(0) + ' kWh' : x.toFixed(2) + ' kWh';
+}
+
+// Minimizar/expandir cards de especificações
+function toggleMinCard(cardId){
+  const el = document.getElementById(cardId);
+  if(!el) return;
+  el.style.display = (el.style.display==='none') ? '' : 'none';
+}
+function fmtKW(x){
+  if (!Number.isFinite(x)) return '—';
+  return x.toFixed(2) + ' kW';
+}
+function fmtH(x){
+  if (!Number.isFinite(x)) return '—';
+  return x.toFixed(1) + ' h';
+}
+function fmtDias(x){
+  if (!Number.isFinite(x)) return '—';
+  if (x < 1) return (x*24).toFixed(1) + ' h';
+  return x.toFixed(2) + ' dias';
+}
+
+function fmtPct(x){ return Number.isFinite(x)? x.toFixed(1)+'%':'—'; }
+function showToast(msg,type='ok',ms=3500){
+  const c=document.getElementById('toastContainer'); if(!c) return;
+  const el=document.createElement('div'); el.className='toast '+type; el.innerHTML=`<span>${msg}</span><button onclick="this.parentNode.remove()" title="Fechar">×</button>`; c.appendChild(el); setTimeout(()=>{ if(el.parentNode) el.remove(); },ms);
+}
+
+// Lógica do modal (abrir/fechar) integrada corretamente
+function initSaveModal(){
+  const openBtn = document.getElementById('openSaveModalBtn');
+  const modal = document.getElementById('saveModal');
+  const closeBtn = document.getElementById('closeSaveModalBtn');
+  if(!openBtn || !modal || !closeBtn) return;
+  const open = ()=>{ 
+    modal.style.display='flex'; 
+    document.body.classList.add('modal-open'); 
+    // foco prioritário
+    setTimeout(()=>{
+      const cfg = document.getElementById('configNameInput');
+      if(cfg) cfg.focus();
+      autoFillModelName('car');
+      autoFillModelName('placa');
+    },60);
+  };
+  const close = ()=>{ modal.style.display='none'; document.body.classList.remove('modal-open'); };
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) close(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+}
+
+// Preenche automaticamente campo de nome de modelo se vazio
+function autoFillModelName(tipo){
+  if(tipo==='car'){
+    const input = document.getElementById('carModelNameInput');
+    if(input && !input.value){
+      const sel = document.getElementById('carSelect');
+      if(sel){
+        const id = sel.value;
+        const nomeCar = document.getElementById('carroNome'+id)?.value?.trim();
+        if(nomeCar) input.value = nomeCar;
+      }
+    }
+  }else if(tipo==='placa'){
+    const input = document.getElementById('placaModelNameInput');
+    if(input && !input.value){
+      const sel = document.getElementById('placaSelect');
+      if(sel){
+        const id = sel.value;
+        const nomePlaca = document.getElementById('placaNome'+id)?.value?.trim();
+        if(nomePlaca) input.value = nomePlaca;
+      }
+    }
+  }
+}
+
+// Ordenação da tabela per-car
+let _perCarSort = {key:null, dir:1};
+function renderPerCarTable(){
+  const tbody = document.querySelector('#perCarTable tbody');
+  if(!tbody || !window._perCarData) return;
+  let data = [...window._perCarData];
+  if(_perCarSort.key){
+    data.sort((a,b)=>{
+      const A=a[_perCarSort.key]; const B=b[_perCarSort.key];
+      if(typeof A==='string') return A.localeCompare(B)*_perCarSort.dir;
+      return (A-B)*_perCarSort.dir;
+    });
+  }
+  tbody.innerHTML = data.map(r=>`<tr>
+    <td>${r.nome}</td>
+    <td>${r.E_bat.toFixed(2)}</td>
+    <td>${r.E_pv.toFixed(2)}</td>
+    <td>${fmtPct(r.participacao)}</td>
+    <td>${Number.isFinite(r.horasFVeq)?r.horasFVeq.toFixed(2):'—'}</td>
+    <td>${Number.isFinite(r.t_lim)?r.t_lim.toFixed(2):'—'}</td>
+  </tr>`).join('');
+}
+document.addEventListener('click', e=>{
+  if(e.target.matches('th.sortable')){
+    const k=e.target.getAttribute('data-sort');
+    if(_perCarSort.key===k){ _perCarSort.dir*=-1; } else { _perCarSort.key=k; _perCarSort.dir=1; }
+    renderPerCarTable();
+  }
+});
+
+// Listeners para mudança de seleção atualizar sugestão de nome
+document.addEventListener('change', (e)=>{
+  if(e.target && e.target.id==='carSelect') autoFillModelName('car');
+  if(e.target && e.target.id==='placaSelect') autoFillModelName('placa');
+});
+
+// Enter envia salvamento no campo de nome correspondente
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){
+    if(document.activeElement===document.getElementById('configNameInput')){
+      saveConfig();
+    }else if(document.activeElement===document.getElementById('carModelNameInput')){
+      saveCarModel();
+    }else if(document.activeElement===document.getElementById('placaModelNameInput')){
+      savePlacaModel();
+    }
+  }
+});
+
+// Carros dinâmicos
+function carroFields(id, values={}){
+  return `<div class="card-dyn">
+    <div class="card-title" style="display:flex;align-items:center;gap:8px;"> 
+      <button type="button" class="min-btn" onclick="toggleMinCard('carro${id}')" title="Minimizar" style="background:transparent;border:none;color:var(--accent);font-size:18px;cursor:pointer;padding:0 4px;">−</button>
+      <button type="button" class="dup-btn" onclick="duplicarCarro(${id})" title="Duplicar">⧉</button>
+      <button type="button" class="remove-btn" onclick="removerCarro(${id})" title="Remover">×</button>
+      <span style="font-weight:700;">🚗 ${values.nome||'' ? values.nome : 'Carro '+(id+1)}</span>
+    </div>
+    <div class="grid" id="carro${id}">
+      <div><label>Nome do carro</label><input class="field" id="carroNome${id}" type="text" value="${values.nome||''}" placeholder="Ex: EV1"></div>
+      <div><label>Capacidade da bateria <span class="unit">kWh</span></label><input class="field" id="capNominal${id}" type="number" min="1" step="0.1" value="${values.capNominal||60}"></div>
+      <div>
+        <label>Capacidade utilizável <span class="unit">%</span>
+          <span style="cursor:pointer;color:var(--accent);font-size:16px;margin-left:6px;" onclick="toggleUtilHelper(${id})" title="Calcular a % a partir de kWh">&#x3f;</span>
+        </label>
+  <input class="field" id="percUtil${id}" type="number" min="50" max="100" step="1" value="${values.percUtil!=null?Math.round(values.percUtil*100):95}">
+        <div id="utilHelper${id}" style="display:none;margin-top:8px;background:rgba(124,207,255,0.08);padding:10px 12px;border-radius:10px;">
+          <div style="font-size:12px;line-height:1.3;margin-bottom:6px;color:var(--muted);">
+            <b>% Utilizável = Cap_utilizável / Cap_nominal × 100</b><br>
+            Insira valores em kWh. Usaremos Capacidade da bateria acima se deixar em branco.
+          </div>
+          <label style="font-size:12px;">Capacidade nominal (kWh)</label>
+          <input class="field" id="capNominalCalc${id}" type="number" min="0" step="0.01" style="margin-bottom:6px;" placeholder="auto se vazio">
+          <label style="font-size:12px;">Capacidade utilizável (kWh)</label>
+            <input class="field" id="capUtilCalc${id}" type="number" min="0" step="0.01" style="margin-bottom:6px;" placeholder="Ex: 75">
+          <button type="button" class="secondary" onclick="calcularPercUtil(${id})">Calcular %</button>
+          <div id="percUtilResult${id}" style="margin-top:6px;font-size:13px;color:var(--accent);"></div>
+        </div>
+      </div>
+      <div><label>SOC inicial <span class="unit">%</span></label><input class="field" id="socIni${id}" type="number" min="0" max="100" step="1" value="${values.socIni||20}"></div>
+      <div><label>SOC final <span class="unit">%</span></label><input class="field" id="socFim${id}" type="number" min="1" max="100" step="1" value="${values.socFim||100}"></div>
+      <div>
+        <label>Eficiência global FV→bateria <span class="unit">%</span>
+          <span style="cursor:pointer;color:var(--accent);font-size:16px;margin-left:6px;" onclick="toggleEtaHelper(${id})" title="Calcular / entender eficiência">&#x3f;</span>
+        </label>
+  <input class="field" id="etaGlobal${id}" type="number" min="60" max="99" step="1" value="${values.etaGlobal!=null?Math.round(values.etaGlobal*100):85}">
+        <div id="etaHelper${id}" style="display:none;margin-top:8px;background:rgba(124,207,255,0.08);padding:10px 12px;border-radius:10px;">
+          <div style="font-size:12px;line-height:1.3;margin-bottom:6px;color:var(--muted);">
+            <b>Eficiência (%) = E_armazenada / E_saida_inversor × 100</b><br>
+            Onde E_armazenada é a energia efetiva que entrou na bateria (ΔSOC × Cap_utilizável) e E_saida_inversor é a energia AC (ou DC antes do conversor) entregue ao carregador.<br>
+            Use medições reais ou estime. Para simulação sem dados: <b>80–88%</b> (sistemas AC residenciais), <b>88–92%</b> (otimizado / menos conversões). Abaixo de 75% investigue perdas.
+          </div>
+          <label style="font-size:12px;">Energia armazenada (kWh) E_armazenada</label>
+          <input class="field" id="Earma${id}" type="number" min="0" step="0.01" style="margin-bottom:6px;" placeholder="Ex: 30">
+          <label style="font-size:12px;">Energia saída inversor (kWh) E_saida</label>
+          <input class="field" id="Esaida${id}" type="number" min="0" step="0.01" style="margin-bottom:6px;" placeholder="Ex: 36">
+          <button type="button" class="secondary" onclick="calcularEta(${id})">Calcular η</button>
+          <div id="etaResult${id}" style="margin-top:6px;font-size:13px;color:var(--accent);"></div>
+          <details style="margin-top:6px;">
+            <summary style="font-size:11px;">Faixas / Notas</summary>
+            <div style="font-size:11px;color:var(--muted);line-height:1.35;">
+              <b>≥ 90%</b>: excelente (mínimas perdas).<br>
+              <b>80–89%</b>: típico / bom.<br>
+              <b>75–79%</b>: aceitável, revisar ajustes (cabos, temperaturas).<br>
+              <b><75%</b>: investigar: conversões múltiplas, aquecimento, cabos subdimensionados, BMS limitando.<br>
+              Valor estimado não substitui medição real.
+            </div>
+          </details>
+        </div>
+      </div>
+      <div><label>Potência máx. do carregador onboard <span class="unit">kW</span></label><input class="field" id="onboardKW${id}" type="number" min="0" step="0.1" value="${values.onboardKW||7.4}"></div>
+    </div>
+    <button type="button" class="dup-btn" onclick="duplicarCarro(${id})" title="Duplicar">⧉</button>
+    <button type="button" class="remove-btn" onclick="removerCarro(${id})" title="Remover">×</button>
+  </div>`;
+}
+function placaFields(id, values={}){
+  return `<div class="card-dyn">
+    <div class="card-title" style="display:flex;align-items:center;gap:8px;"> 
+      <button type="button" class="min-btn" onclick="toggleMinCard('placa${id}')" title="Minimizar" style="background:transparent;border:none;color:var(--accent);font-size:18px;cursor:pointer;padding:0 4px;">−</button>
+      <button type="button" class="dup-btn" onclick="duplicarPlaca(${id})" title="Duplicar">⧉</button>
+      <button type="button" class="remove-btn" onclick="removerPlaca(${id})" title="Remover">×</button>
+      <span style="font-weight:700;">☀️ ${values.nome||'' ? values.nome : 'Placa '+(id+1)}</span>
+    </div>
+    <div class="grid" id="placa${id}">
+      <div><label>Nome da placa</label><input class="field" id="placaNome${id}" type="text" value="${values.nome||''}" placeholder="Ex: FV1"></div>
+      <div>
+        <label>Potência do array <span class="unit">kWp</span>
+          <span style="cursor:pointer;color:var(--accent);font-size:16px;margin-left:6px;" onclick="toggleParrayHelper(${id})" title="Calcular potência do array">&#x3f;</span>
+        </label>
+        <input class="field" id="kWp${id}" type="number" min="0.1" step="0.1" value="${values.kWp||2.0}">
+        <div id="parrayHelper${id}" style="display:none;margin-top:8px;background:rgba(124,207,255,0.08);padding:10px;border-radius:10px;">
+          <label style="font-size:13px;">Potência do módulo (W)</label>
+          <input class="field" id="moduloPot${id}" type="number" min="1" step="1" style="margin-bottom:6px;">
+          <label style="font-size:13px;">Nº de módulos</label>
+          <input class="field" id="numModulos${id}" type="number" min="1" step="1" style="margin-bottom:6px;">
+          <button type="button" class="secondary" onclick="calcularParray(${id})">Calcular</button>
+          <div id="parrayResult${id}" style="margin-top:6px;font-size:13px;color:var(--accent);"></div>
+        </div>
+      </div>
+      <div>
+        <label>Performance Ratio (PR) <span class="unit">%</span>
+          <span style="cursor:pointer;color:var(--accent);font-size:16px;margin-left:6px;" onclick="togglePRHelper(${id})" title="Calcular / entender PR">&#x3f;</span>
+        </label>
+ <input class="field" id="pr${id}" type="number" min="50" max="95" step="1" value="${values.pr!=null?Math.round(values.pr*100):75}">
+        <div id="prHelper${id}" style="display:none;margin-top:8px;background:rgba(161,140,255,0.10);padding:10px 12px;border-radius:10px;">
+          <div style="font-size:12px;line-height:1.3;margin-bottom:6px;color:var(--muted);">
+            <b>PR = E_real / (P_instalada × H_ref) × 100</b><br>
+            Faixa típica boa: 75–85%. Estimativa antes da instalação: use 75–80% se não tiver dados.<br>
+            Para simulação padrão: assuma perdas térmicas, elétricas e sombreamento moderado.
+          </div>
+          <label style="font-size:12px;">Energia gerada (E_real) kWh</label>
+          <input class="field" id="Ereal${id}" type="number" min="0" step="0.1" style="margin-bottom:6px;">
+          <label style="font-size:12px;">Potência instalada (P_instalada) kWp</label>
+          <input class="field" id="Pinst${id}" type="number" min="0" step="0.01" style="margin-bottom:6px;" placeholder="auto usa kWp acima">
+          <label style="font-size:12px;">Irradiação ref. (H_ref) kWh/m²</label>
+          <input class="field" id="Href${id}" type="number" min="0" step="0.01" style="margin-bottom:6px;" placeholder="Ex: 5.0">
+          <button type="button" class="secondary" onclick="calcularPR(${id})">Calcular PR</button>
+          <div id="prResult${id}" style="margin-top:6px;font-size:13px;color:var(--accent);"></div>
+          <details style="margin-top:6px;">
+            <summary style="font-size:11px;">Resumo / Interpretação</summary>
+            <div style="font-size:11px;color:var(--muted);line-height:1.35;">
+              <b>Acima 85%</b>: excelente (perdas mínimas).<br>
+              <b>75–85%</b>: bom / esperado.<br>
+              <b>70–75%</b>: aceitável, verificar otimizações.<br>
+              <b><70%</b>: investigar (sombreamento, sujeira, falhas, mismatch).<br>
+              Sem medir E_real e H_ref você só tem estimativa, não valor real.
+            </div>
+          </details>
+        </div>
+      </div>
+      <div>
+        <label>Eficiência adicional (η array) <span class="unit">%</span>
+          <span class="info-icon" onclick="showHelp(event,'Eficiência adicional','Este campo representa perdas extras específicas do array que não estão incluídas no PR, como cabos longos, otimizadores ou microinversores. Se todas as perdas já estão no PR, mantenha 100%.')">i</span>
+        </label>
+        <input class="field" id="etaArr${id}" type="number" min="70" max="100" step="1" value="${values.etaArr!=null?Math.round(values.etaArr*100):100}">
+      </div>
+      <div><label>Horas de Sol Pleno (PSH) <span class="unit">h/dia</span></label><input class="field" id="psh${id}" type="number" min="1" step="0.1" value="${values.psh||5}"></div>
+      <div><label>Observação</label><input class="field" id="obs${id}" type="text" value="${values.obs||''}" placeholder="Orientação, inclinação, sombreamento... (opcional)"></div>
+    </div>
+    <button type="button" class="dup-btn" onclick="duplicarPlaca(${id})" title="Duplicar">⧉</button>
+    <button type="button" class="remove-btn" onclick="removerPlaca(${id})" title="Remover">×</button>
+  </div>`;
+// Minimizar/expandir cards de especificações
+function toggleMinCard(cardId){
+  const el = document.getElementById(cardId);
+  if(!el) return;
+  el.style.display = (el.style.display==='none') ? '' : 'none';
+}
+}
+// Helper para potência do array
+function toggleParrayHelper(id){
+  const el = document.getElementById('parrayHelper'+id);
+  if(el) el.style.display = (el.style.display==='none'||!el.style.display)?'block':'none';
+}
+
+// Helper PR
+function togglePRHelper(id){
+  const el = document.getElementById('prHelper'+id);
+  if(el) el.style.display = (el.style.display==='none'||!el.style.display)?'block':'none';
+}
+
+function calcularPR(id){
+  const Ereal = num(document.getElementById('Ereal'+id)?.value, 0);
+  let Pinst = num(document.getElementById('Pinst'+id)?.value, 0);
+  const Href = num(document.getElementById('Href'+id)?.value, 0);
+  // usa kWp do campo principal se não preencher Pinst
+  if(Pinst<=0){
+    Pinst = num(document.getElementById('kWp'+id)?.value, 0);
+  }
+  if(Ereal>0 && Pinst>0 && Href>0){
+    const PR = (Ereal / (Pinst * Href)) * 100;
+    document.getElementById('pr'+id).value = PR.toFixed(0);
+    let classe = 'ok';
+    if(PR < 70) classe='err'; else if(PR < 75) classe='warn'; else if(PR>85) classe='ok';
+    document.getElementById('prResult'+id).innerHTML = `PR calculado: <b class="${classe}">${PR.toFixed(1)}%</b>`;
+  } else {
+    document.getElementById('prResult'+id).textContent = '';
+  }
+}
+
+// Helper Eficiência (η)
+function toggleEtaHelper(id){
+  const el = document.getElementById('etaHelper'+id);
+  if(el) el.style.display = (el.style.display==='none'||!el.style.display)?'block':'none';
+}
+
+function calcularEta(id){
+  const Earma = num(document.getElementById('Earma'+id)?.value, 0);
+  const Esaida = num(document.getElementById('Esaida'+id)?.value, 0);
+  if(Earma>0 && Esaida>0){
+    const eta = (Earma / Esaida) * 100;
+    document.getElementById('etaGlobal'+id).value = Math.min(99, Math.max(1, eta)).toFixed(0);
+    let classe='ok';
+    if(eta < 75) classe='err'; else if(eta < 80) classe='warn';
+    document.getElementById('etaResult'+id).innerHTML = `Eficiência calculada: <b class="${classe}">${eta.toFixed(1)}%</b>`;
+  } else {
+    document.getElementById('etaResult'+id).textContent='';
+  }
+}
+
+// Helper % Capacidade Utilizável
+function toggleUtilHelper(id){
+  const el = document.getElementById('utilHelper'+id);
+  if(el) el.style.display = (el.style.display==='none'||!el.style.display)?'block':'none';
+}
+function calcularPercUtil(id){
+  let capNom = num(document.getElementById('capNominalCalc'+id)?.value, 0);
+  const capNomField = num(document.getElementById('capNominal'+id)?.value, 0);
+  if(capNom<=0) capNom = capNomField; // fallback
+  const capUtil = num(document.getElementById('capUtilCalc'+id)?.value, 0);
+  if(capNom>0 && capUtil>0){
+    const perc = (capUtil / capNom) * 100;
+    document.getElementById('percUtil'+id).value = Math.min(100, Math.max(0, perc)).toFixed(0);
+    let classe='ok';
+    if(perc < 85) classe='warn';
+    if(perc < 75) classe='err';
+    document.getElementById('percUtilResult'+id).innerHTML = `Utilizável: <b class="${classe}">${perc.toFixed(2)}%</b>`;
+  } else {
+    document.getElementById('percUtilResult'+id).textContent='';
+  }
+}
+
+function calcularParray(id){
+  const potModulo = num(document.getElementById('moduloPot'+id)?.value, 0);
+  const numModulos = num(document.getElementById('numModulos'+id)?.value, 0);
+  if(potModulo > 0 && numModulos > 0){
+    const kWp = (potModulo * numModulos) / 1000;
+    document.getElementById('kWp'+id).value = kWp.toFixed(2);
+    document.getElementById('parrayResult'+id).textContent = `Potência do array: ${kWp.toFixed(2)} kWp`;
+  }else{
+    document.getElementById('parrayResult'+id).textContent = '';
+  }
+}
+
+let carros = [{id:0, percUtil:0.95, etaGlobal:0.85}];
+let placas = [{id:0, pr:0.75, etaArr:1}];
+let nextCarroId = 1;
+let nextPlacaId = 1;
+
+function renderCarros(skipHarvest=false){
+  if(!skipHarvest){
+    // Captura valores atuais antes de recriar HTML (evita perder alterações)
+    carros = carros.map(c=>({
+      ...c,
+      nome: document.getElementById('carroNome'+c.id)?.value || c.nome || '',
+      capNominal: num(document.getElementById('capNominal'+c.id)?.value, c.capNominal||60),
+  percUtil: (function(v,prev){ v=num(v, prev!=null?prev*100:95); return clamp(v,0,100)/100; })(document.getElementById('percUtil'+c.id)?.value, c.percUtil),
+      socIni: num(document.getElementById('socIni'+c.id)?.value, c.socIni||20),
+      socFim: num(document.getElementById('socFim'+c.id)?.value, c.socFim||100),
+  etaGlobal: (function(v,prev){ v=num(v, prev!=null?prev*100:85); return clamp(v,1,100)/100; })(document.getElementById('etaGlobal'+c.id)?.value, c.etaGlobal),
+      onboardKW: num(document.getElementById('onboardKW'+c.id)?.value, c.onboardKW||7.4)
+    }));
+  }
+  const container = document.getElementById('carrosContainer');
+  container.innerHTML = carros.map(c=>carroFields(c.id, c)).join('');
+  updateSavedCarModels();
+}
+function renderPlacas(skipHarvest=false){
+  if(!skipHarvest){
+    placas = placas.map(p=>({
+      ...p,
+      nome: document.getElementById('placaNome'+p.id)?.value || p.nome || '',
+      kWp: num(document.getElementById('kWp'+p.id)?.value, p.kWp||2.0),
+      pr: (function(v,prev){ v=num(v, prev!=null?prev*100:75); return clamp(v,0.01,100)/100; })(document.getElementById('pr'+p.id)?.value, p.pr),
+      etaArr: (function(v,prev){ v=num(v, prev!=null?prev*100:100); return clamp(v,1,100)/100; })(document.getElementById('etaArr'+p.id)?.value, p.etaArr),
+      psh: num(document.getElementById('psh'+p.id)?.value, p.psh||5),
+      obs: document.getElementById('obs'+p.id)?.value || p.obs || ''
+    }));
+  }
+  const container = document.getElementById('placasContainer');
+  container.innerHTML = placas.map(p=>placaFields(p.id, p)).join('');
+  updateSavedPlacaModels();
+}
+function adicionarCarro(){
+  carros.push({id:nextCarroId++});
+  renderCarros();
+}
+function removerCarro(id){
+  carros = carros.filter(c=>c.id!==id);
+  if(carros.length===0){carros=[{id:nextCarroId++}];}
+  renderCarros();
+}
+function duplicarCarro(id){
+  const origem = carros.find(c=>c.id===id);
+  if(!origem) return;
+  // Captura valores atuais antes de clonar
+  const clone = {
+    ...origem,
+    id: nextCarroId++,
+    nome: (document.getElementById('carroNome'+origem.id)?.value||('Carro '+(origem.id+1))) + ' (cópia)'
+  };
+  carros.push(clone);
+  renderCarros();
+}
+function adicionarPlaca(){
+  placas.push({id:nextPlacaId++});
+  renderPlacas();
+}
+function removerPlaca(id){
+  placas = placas.filter(p=>p.id!==id);
+  if(placas.length===0){placas=[{id:nextPlacaId++}];}
+  renderPlacas();
+}
+function duplicarPlaca(id){
+  const origem = placas.find(p=>p.id===id);
+  if(!origem) return;
+  const clone = {
+    ...origem,
+    id: nextPlacaId++,
+    nome: (document.getElementById('placaNome'+origem.id)?.value||('Placa '+(origem.id+1))) + ' (cópia)'
+  };
+  placas.push(clone);
+  renderPlacas();
+}
+
+// Salvar/Carregar configurações
+function getConfigFromFields(){
+  // Carros
+  let carrosData = carros.map(c=>({
+    id: c.id,
+    nome: document.getElementById('carroNome'+c.id)?.value||'',
+    capNominal: num(document.getElementById('capNominal'+c.id)?.value, 60),
+  percUtil: (function(v){ v=num(v,95); return clamp(v,0,100)/100; })(document.getElementById('percUtil'+c.id)?.value),
+    socIni: num(document.getElementById('socIni'+c.id)?.value, 20),
+    socFim: num(document.getElementById('socFim'+c.id)?.value, 100),
+  etaGlobal: (function(v){ v=num(v,85); return clamp(v,1,100)/100; })(document.getElementById('etaGlobal'+c.id)?.value),
+    onboardKW: num(document.getElementById('onboardKW'+c.id)?.value, 7.4)
+  }));
+  // Placas
+  let placasData = placas.map(p=>({
+    id: p.id,
+    nome: document.getElementById('placaNome'+p.id)?.value||'',
+    kWp: num(document.getElementById('kWp'+p.id)?.value, 2.0),
+    pr: (function(v){ v=num(v,75); return clamp(v,0.01,100)/100; })(document.getElementById('pr'+p.id)?.value),
+    etaArr: (function(v){ v=num(v,100); return clamp(v,1,100)/100; })(document.getElementById('etaArr'+p.id)?.value),
+    psh: num(document.getElementById('psh'+p.id)?.value, 5),
+    obs: document.getElementById('obs'+p.id)?.value||''
+  }));
+  // Meta parâmetros
+  const meta = {
+    numChargers: num(document.getElementById('numChargers')?.value,1),
+    taperFactor: num(document.getElementById('taperFactorInput')?.value,0.55),
+  tarifa: num(document.getElementById('tarifaInput')?.value,0.95),
+  autoCalcMode: document.getElementById('autoCalcMode')?.value||'manual',
+    version: '1.1'
+  };
+  return {carros:carrosData, placas:placasData, meta};
+}
+
+function saveConfig(){
+  const input = document.getElementById('configNameInput');
+  const feedback = document.getElementById('configFeedback');
+  const btn = document.getElementById('saveConfigModalBtn');
+  const nome = input?.value?.trim();
+  if(!nome){
+    if(feedback){ feedback.style.display='block'; feedback.style.color='var(--warn)'; feedback.textContent='Informe um nome para salvar.'; }
+    return;
+  }
+  try{
+    let configs = JSON.parse(localStorage.getItem('evConfigs')||'{}');
+    const exists = !!configs[nome];
+    configs[nome] = getConfigFromFields();
+    localStorage.setItem('evConfigs', JSON.stringify(configs));
+  localStorage.setItem('evLastConfig', nome);
+    updateSavedConfigs();
+  // selecionar o recém salvo
+  const select = document.getElementById('savedConfigs');
+  if(select) select.value = nome;
+    if(feedback){
+      feedback.style.display='block';
+      feedback.style.color='var(--ok)';
+      feedback.textContent = exists? 'Configuração atualizada.' : 'Configuração salva.';
+    }
+    if(btn) { btn.disabled = true; setTimeout(()=>{ if(btn) btn.disabled=false; },600); }
+  }catch(e){
+    if(feedback){ feedback.style.display='block'; feedback.style.color='var(--err)'; feedback.textContent='Erro ao salvar (quota ou formato).'; }
+  }
+}
+function updateSavedConfigs(){
+  let configs = JSON.parse(localStorage.getItem('evConfigs')||'{}');
+  const select = document.getElementById('savedConfigs');
+  select.innerHTML = Object.keys(configs).map(n=>`<option value="${n}">${n}</option>`).join('');
+  const badge = document.getElementById('countConfigs');
+  if(badge) badge.textContent = Object.keys(configs).length;
+  // manter última seleção
+  const last = localStorage.getItem('evLastConfig');
+  if(last && select && configs[last]) select.value = last;
+}
+function loadConfig(){
+  const select = document.getElementById('savedConfigs');
+  const nome = select.value; if(!nome) return;
+  let configs = JSON.parse(localStorage.getItem('evConfigs')||'{}');
+  const conf = configs[nome]; if(!conf) return;
+  carros = conf.carros.map((c,i)=>({...c,id:i, percUtil: c.percUtil>1? c.percUtil/100 : c.percUtil, etaGlobal: c.etaGlobal>1? c.etaGlobal/100 : c.etaGlobal }));
+  placas = conf.placas.map((p,i)=>({...p,id:i, pr: p.pr>1? p.pr/100 : p.pr, etaArr: p.etaArr>1? p.etaArr/100 : (p.etaArr!=null? p.etaArr:1)}));
+  nextCarroId = carros.length; nextPlacaId = placas.length;
+  renderCarros(true); renderPlacas(true); updateSavedCarModels(); updateSavedPlacaModels();
+  if(conf.meta){
+    const nc = document.getElementById('numChargers');
+    const tf = document.getElementById('taperFactorInput');
+    const tarifa = document.getElementById('tarifaInput');
+    const acm = document.getElementById('autoCalcMode');
+    if(nc && Number(conf.meta.numChargers)>0) nc.value = conf.meta.numChargers;
+    if(tf && Number(conf.meta.taperFactor)>0) tf.value = conf.meta.taperFactor;
+    if(tarifa && conf.meta.tarifa!=null) tarifa.value = conf.meta.tarifa;
+    if(acm && conf.meta.autoCalcMode) acm.value = conf.meta.autoCalcMode;
+  }
+  localStorage.setItem('evLastConfig', nome);
+  const input = document.getElementById('configNameInput'); if(input) input.value = nome;
+  const feedback = document.getElementById('configFeedback'); if(feedback){ feedback.style.display='block'; feedback.style.color='var(--accent)'; feedback.textContent='Configuração carregada.'; }
+}
+function deleteConfig(){
+  const select = document.getElementById('savedConfigs');
+  const nome = select.value;
+  if(!nome) return;
+  if(!confirm('Excluir configuração "'+nome+'"?')) return;
+  let configs = JSON.parse(localStorage.getItem('evConfigs')||'{}');
+  delete configs[nome];
+  localStorage.setItem('evConfigs', JSON.stringify(configs));
+  updateSavedConfigs();
+  const feedback = document.getElementById('configFeedback');
+  if(feedback){ feedback.style.display='block'; feedback.style.color='var(--warn)'; feedback.textContent='Configuração removida.'; }
+}
+
+// Salvar/Carregar modelos de carro
+function getCarModelFromFields(id){
+  return {
+    nome: document.getElementById('carroNome'+id)?.value||'',
+    capNominal: num(document.getElementById('capNominal'+id)?.value, 60),
+  percUtil: (function(v){ v=num(document.getElementById('percUtil'+id)?.value,95); return v>1? v/100 : v; })(),
+    socIni: num(document.getElementById('socIni'+id)?.value, 20),
+    socFim: num(document.getElementById('socFim'+id)?.value, 100),
+  etaGlobal: (function(v){ v=num(document.getElementById('etaGlobal'+id)?.value,85); return v>1? v/100 : v; })(),
+    onboardKW: num(document.getElementById('onboardKW'+id)?.value, 7.4)
+  };
+}
+function saveCarModel(){
+  if(carros.length===0) return;
+  const targetSelect = document.getElementById('carSelect');
+  const id = Number(targetSelect?.value ?? carros[0].id);
+  const nomeInput = document.getElementById('carModelNameInput');
+  const nome = nomeInput?.value?.trim();
+  const feedback = document.getElementById('carModelFeedback');
+  if(!nome){ alert('Defina um nome para o modelo de carro.'); return; }
+  let models = JSON.parse(localStorage.getItem('carModels')||'{}');
+  models[nome] = getCarModelFromFields(id);
+  localStorage.setItem('carModels', JSON.stringify(models));
+  updateSavedCarModels();
+  if(feedback){ feedback.style.display='block'; feedback.style.color='var(--ok)'; feedback.textContent='Modelo salvo.'; }
+}
+function updateSavedCarModels(){
+  let models = JSON.parse(localStorage.getItem('carModels')||'{}');
+  const savedSel = document.getElementById('savedCarModels');
+  if(savedSel) savedSel.innerHTML = Object.keys(models).map(n=>`<option value="${n}">${n}</option>`).join('');
+  const badge = document.getElementById('countCarModels');
+  if(badge) badge.textContent = Object.keys(models).length;
+  // Atualiza selects de carros
+  const carSelect = document.getElementById('carSelect');
+  const carSelectApply = document.getElementById('carSelectApply');
+  const options = carros.map(c=>`<option value="${c.id}">${document.getElementById('carroNome'+c.id)?.value||'Carro '+(c.id+1)}</option>`).join('');
+  if(carSelect) carSelect.innerHTML = options;
+  if(carSelectApply) carSelectApply.innerHTML = options;
+}
+function loadCarModel(){
+  const savedSel = document.getElementById('savedCarModels');
+  const applySel = document.getElementById('carSelectApply');
+  if(!savedSel || !applySel) return;
+  const nome = savedSel.value;
+  const carId = Number(applySel.value);
+  if(!nome || isNaN(carId)) return;
+  let models = JSON.parse(localStorage.getItem('carModels')||'{}');
+  const model = models[nome];
+  if(!model) return;
+  document.getElementById('carroNome'+carId).value = model.nome;
+  document.getElementById('capNominal'+carId).value = model.capNominal;
+  document.getElementById('percUtil'+carId).value = (model.percUtil<=1?Math.round(model.percUtil*100):model.percUtil);
+  document.getElementById('socIni'+carId).value = model.socIni;
+  document.getElementById('socFim'+carId).value = model.socFim;
+  document.getElementById('etaGlobal'+carId).value = (model.etaGlobal<=1?Math.round(model.etaGlobal*100):model.etaGlobal);
+  document.getElementById('onboardKW'+carId).value = model.onboardKW;
+  alert('Modelo aplicado!');
+}
+
+// Salvar/Carregar modelos de placa
+function getPlacaModelFromFields(id){
+  const nome = document.getElementById('placaNome'+id)?.value || 'Array '+(id+1);
+  const kWp = num(document.getElementById('kWp'+id)?.value, 2.0);
+  const pr = clamp(num(document.getElementById('pr'+id)?.value, 75),0.01,100)/100;
+  const etaArr = clamp(num(document.getElementById('etaArr'+id)?.value, 100),1,100)/100;
+  const psh = num(document.getElementById('psh'+id)?.value, 5);
+  const obs = document.getElementById('obsPlaca'+id)?.value || '';
+  return {nome, kWp, pr, etaArr, psh, obs};
+}
+function savePlacaModel(id){
+  if(placas.length===0) return;
+  const targetSelect = document.getElementById('placaSelect');
+  const idPlaca = Number(targetSelect?.value ?? placas[0].id);
+  const nomeInput = document.getElementById('placaModelNameInput');
+  const nome = nomeInput?.value?.trim();
+  const feedback = document.getElementById('placaModelFeedback');
+  if(!nome){ alert('Defina um nome para o modelo de placa.'); return; }
+  let models = JSON.parse(localStorage.getItem('placaModels')||'{}');
+  models[nome] = getPlacaModelFromFields(idPlaca);
+  localStorage.setItem('placaModels', JSON.stringify(models));
+  updateSavedPlacaModels();
+  if(feedback){ feedback.style.display='block'; feedback.style.color='var(--ok)'; feedback.textContent='Modelo salvo.'; }
+}
+function updateSavedPlacaModels(){
+  let models = JSON.parse(localStorage.getItem('placaModels')||'{}');
+  const savedSel = document.getElementById('savedPlacaModels');
+  if(savedSel) savedSel.innerHTML = Object.keys(models).map(n=>`<option value="${n}">${n}</option>`).join('');
+  const badge = document.getElementById('countPlacaModels');
+  if(badge) badge.textContent = Object.keys(models).length;
+  const placaSelect = document.getElementById('placaSelect');
+  const placaSelectApply = document.getElementById('placaSelectApply');
+  const options = placas.map(p=>`<option value="${p.id}">${document.getElementById('placaNome'+p.id)?.value||'Placa '+(p.id+1)}</option>`).join('');
+  if(placaSelect) placaSelect.innerHTML = options;
+  if(placaSelectApply) placaSelectApply.innerHTML = options;
+}
+function loadPlacaModel(){
+  const select = document.getElementById('savedPlacaModels');
+  const nome = select.value; if(!nome) return;
+  let models = JSON.parse(localStorage.getItem('placaModels')||'{}');
+  const model = models[nome]; if(!model) return;
+  // Preencher campos
+  const nomeInput = document.getElementById('placaNome'+id);
+  const kWpInput = document.getElementById('kWp'+id);
+  const prInput = document.getElementById('pr'+id);
+  const etaArrInput = document.getElementById('etaArr'+id);
+  const pshInput = document.getElementById('psh'+id);
+  const obsInput = document.getElementById('obsPlaca'+id);
+  if(nomeInput) nomeInput.value = model.nome || '';
+  if(kWpInput) kWpInput.value = model.kWp || '';
+  if(prInput) prInput.value = (model.pr > 1 ? model.pr : (model.pr||0.75)*100).toFixed(2);
+  if(etaArrInput) etaArrInput.value = (model.etaArr > 1 ? model.etaArr : (model.etaArr || 1) * 100).toFixed(2);
+  if(pshInput) pshInput.value = model.psh || '';
+  if(obsInput) obsInput.value = model.obs || '';
+  const feedback = document.getElementById('placaFeedback'+id);
+  if(feedback){ feedback.style.display='block'; feedback.style.color='var(--ok)'; feedback.textContent='Modelo carregado.'; }
+}
+
+// Cálculo para múltiplos carros/placas (ainda exibe só do primeiro)
+
+function calcular(){
+  const debug = document.getElementById('debugMode')?.checked;
+  if(debug) console.groupCollapsed('%c[CÁLCULO] Início','color:#7ccfff');
+  // Somar energia de todos os carros
+  let E_bat_total = 0;
+  let E_pv_total = 0;
+  let onboardKW_total = 0;
+  let etaGlobal_min = 1;
+  let alerts = [];
+  let nomesCarros = [];
+  let perCarRows = [];
+  let seqSumHoras = 0; // soma sequencial de tempos limitados
+  carros.forEach(c => {
+      const capNominal = num(document.getElementById('capNominal'+c.id)?.value, c.capNominal||60);
+      // percUtil e etaGlobal armazenados internamente em fração; se o usuário editou campo, convertemos naquele momento no renderCarros(); então aqui podemos tentar ler diretamente do array c, fallback DOM -> fração
+      const percUtil = (function(){
+        const domVal = document.getElementById('percUtil'+c.id)?.value;
+        if(domVal!=null && domVal!=='') return clamp(num(domVal, c.percUtil*100),0,100)/100; return c.percUtil||0.95;
+      })();
+      const socIni = clamp(num(document.getElementById('socIni'+c.id)?.value, c.socIni||20),0,100)/100;
+      const socFim = clamp(num(document.getElementById('socFim'+c.id)?.value, c.socFim||100),0,100)/100;
+      const etaGlobal = (function(){
+        const domVal = document.getElementById('etaGlobal'+c.id)?.value;
+        if(domVal!=null && domVal!=='') return clamp(num(domVal, (c.etaGlobal||0.85)*100),1,100)/100; return c.etaGlobal||0.85;
+      })();
+    const onboardKW  = Math.max(0, num(document.getElementById('onboardKW'+c.id)?.value, 7.4));
+    nomesCarros.push(document.getElementById('carroNome'+c.id)?.value||'Carro '+(c.id+1));
+    if (socFim <= socIni) alerts.push(`O SOC final do carro ${nomesCarros[nomesCarros.length-1]} deve ser maior que o SOC inicial.`);
+    const capUtil_kWh = capNominal * percUtil;
+    const deltaSOC    = Math.max(0, socFim - socIni);
+    const E_bat       = capUtil_kWh * deltaSOC;
+    const E_pv        = E_bat > 0 ? E_bat / etaGlobal : 0;
+    E_bat_total += E_bat;
+    E_pv_total += E_pv;
+    onboardKW_total += onboardKW;
+  if(debug) console.log('[CARRO]', nomesCarros[nomesCarros.length-1], {capNominal, percUtil, socIni, socFim, deltaSOC, capUtil_kWh, E_bat, etaGlobal, E_pv, onboardKW});
+    if (etaGlobal < etaGlobal_min) etaGlobal_min = etaGlobal;
+    if (etaGlobal < 0.75) alerts.push(`Eficiência global baixa no carro ${nomesCarros[nomesCarros.length-1]}`);
+    // Armazena temporariamente – tempos dependem de totais FV (calculados depois)
+    perCarRows.push({nome: nomesCarros[nomesCarros.length-1], E_bat, E_pv, onboardKW});
+  });
+
+  // Somar potência e geração das placas
+  let kWp_total = 0;
+  let pr_total = 0;
+  let psh_total = 0;
+  let etaArr_total = 0;
+  let eff_total = 0; // PR*etaArr ponderado
+  let nomesPlacas = [];
+  let pr_weighted_sum = 0; let psh_weighted_sum = 0; let eta_weighted_sum = 0; let eff_weighted_sum = 0; let weight_sum = 0;
+  placas.forEach(p => {
+      const kWp = Math.max(0, num(document.getElementById('kWp'+p.id)?.value, p.kWp||2.0));
+      // PR já armazenado como fração; converter DOM somente se alterado (DOM em %) -> fração
+      const pr = (function(){
+        const domVal = document.getElementById('pr'+p.id)?.value;
+        if(domVal!=null && domVal!=='') return clamp(num(domVal, (p.pr||0.75)*100),0.01,100)/100; return p.pr||0.75;
+      })();
+      const etaArr = (function(){
+        const domVal = document.getElementById('etaArr'+p.id)?.value;
+        if(domVal!=null && domVal!=='') return clamp(num(domVal, (p.etaArr||1)*100),1,100)/100; return p.etaArr||1;
+      })();
+      const psh = Math.max(0, num(document.getElementById('psh'+p.id)?.value, p.psh||5));
+    nomesPlacas.push(document.getElementById('placaNome'+p.id)?.value||'Placa '+(p.id+1));
+    if (kWp <= 0) alerts.push(`Defina a potência do array (kWp) > 0 para ${nomesPlacas[nomesPlacas.length-1]}.`);
+    if (psh <= 0) alerts.push(`Defina as horas de sol pleno (PSH) > 0 para ${nomesPlacas[nomesPlacas.length-1]}.`);
+    kWp_total += kWp;
+    pr_weighted_sum += pr * kWp; // pr já em fração
+  psh_weighted_sum += psh * kWp;
+  eta_weighted_sum += etaArr * kWp;
+  eff_weighted_sum += (pr*etaArr) * kWp;
+    weight_sum += kWp;
+    if(debug) console.log('[PLACA]', nomesPlacas[nomesPlacas.length-1], {kWp, prFraction: pr, etaArr, fatorEfetivo: pr*etaArr, psh});
+  });
+  if(weight_sum>0){
+    pr_total = pr_weighted_sum / weight_sum;
+    psh_total = psh_weighted_sum / weight_sum;
+    etaArr_total = eta_weighted_sum / weight_sum;
+    eff_total = eff_weighted_sum / weight_sum;
+  } else { pr_total = 0; psh_total = 0; etaArr_total = 0; eff_total = 0; }
+
+  // Cálculos totais
+  const E_dia = kWp_total * psh_total * eff_total; // usa PR * eta adicional
+  const dias = (E_dia > 0) ? (E_pv_total / E_dia) : Infinity;
+  const horasSol = (kWp_total*eff_total > 0) ? (E_pv_total / (kWp_total * eff_total)) : Infinity;
+  const P_pico_FV = kWp_total * eff_total;
+  const P_lim = Math.max(0, Math.min(onboardKW_total || Infinity, P_pico_FV || Infinity));
+  const t_min = (P_lim > 0) ? (E_bat_total / P_lim) : Infinity;
+  // Saldo diário FV vs demanda
+  const saldo = E_dia - E_pv_total; // positivo excedente, negativo déficit
+  if(debug) console.log('[TOTAIS]', {kWp_total, pr_total_fraction: pr_total, etaArr_total, eff_total, psh_total, E_dia, E_bat_total, E_pv_total, saldo, dias, horasSol, P_pico_FV, P_lim, t_min});
+  const tarifa = num(document.getElementById('tarifaInput')?.value,0.95);
+  const kpiDef = document.getElementById('kpiDeficit');
+  const defNote = document.getElementById('deficitNote');
+  if(kpiDef && defNote){
+    if(Number.isFinite(saldo)){
+      if(saldo>=0){
+        kpiDef.innerHTML = `<span class="ok">+${saldo.toFixed(2)} kWh</span>`;
+        defNote.textContent = 'Excedente diário estimado.';
+      } else {
+        const deficit = -saldo; const custo = deficit * tarifa;
+        kpiDef.innerHTML = `<span class="err">-${deficit.toFixed(2)} kWh</span>`;
+        defNote.textContent = `Déficit: R$ ${custo.toFixed(2)}/dia (tarifa ${tarifa.toFixed(2)})`;
+      }
+    } else { kpiDef.textContent='—'; defNote.textContent='—'; }
+  }
+
+  if (P_pico_FV < 1.0) alerts.push("Potência de pico FV baixa; carregamento será bem lento.");
+  if (!Number.isFinite(dias) || !Number.isFinite(horasSol)) alerts.push("Verifique os campos: há valores inválidos.");
+
+  // Exibir KPIs totais
+  document.getElementById('kpiEbat').innerHTML  = `<span class="ok">${fmtKWh(E_bat_total)}</span>`;
+  document.getElementById('kpiEpv').innerHTML   = fmtKWh(E_pv_total);
+  document.getElementById('kpiEdia').innerHTML  = fmtKWh(E_dia) + ` <small>(por dia)</small>`;
+  document.getElementById('kpiDias').innerHTML  = fmtDias(dias);
+  document.getElementById('kpiHoras').innerHTML = fmtH(horasSol);
+  document.getElementById('kpiTmin').innerHTML  = Number.isFinite(t_min) ? fmtH(t_min) : '—';
+
+  // Preencher detalhamento por carro
+  const wrapper = document.getElementById('perCarWrapper');
+  const tbody = document.querySelector('#perCarTable tbody');
+  const seqInfo = document.getElementById('seqTotalInfo');
+  if(perCarRows.length && kWp_total>0 && pr_total>0){
+    wrapper.style.display='block';
+    const enriched = perCarRows.map(r=>{
+      const horasFVeq = (kWp_total*pr_total>0) ? (r.E_pv / (kWp_total*pr_total)) : Infinity;
+      const limitePot = Math.min(r.onboardKW||Infinity, kWp_total*pr_total || Infinity);
+      const t_lim = (limitePot>0) ? (r.E_bat / limitePot) : Infinity;
+      if(Number.isFinite(t_lim)) seqSumHoras += t_lim;
+      const participacao = (E_pv_total>0? (r.E_pv/E_pv_total)*100 : 0);
+      return {...r, horasFVeq, t_lim, participacao};
+    });
+    window._perCarData = enriched;
+    renderPerCarTable();
+    // Ajuste de taper e fila real com múltiplos carregadores
+    const chargers = Math.max(1, num(document.getElementById('numChargers')?.value,1));
+    const taperFactorUser = clamp(num(document.getElementById('taperFactorInput')?.value,0.55),0.1,1);
+    function calcTaperFactor(a,b){
+      // a=SOC inicial (0-1), b=SOC final
+      if(b<=0.8) return 1;
+      if(a>=0.8) return 1/ taperFactorUser; // todo o intervalo na zona taper -> fator de tempo maior
+      // parte antes de 0.8
+      const frac1 = (0.8 - a)/(b - a);
+      const frac2 = 1 - frac1; // acima de 0.8
+      return frac1*1 + frac2*(1/ taperFactorUser);
+    }
+    // Criar lista para simulação paralela
+    const totalPVPower = kWp_total * pr_total; // kW efetivo (aprox)
+    const jobs = perCarRows.map(r=>{
+      // Recuperar soc ini/fim dos campos (para taper)
+      const idx = carros.find(c=> (document.getElementById('carroNome'+c.id)?.value||('Carro '+(c.id+1))) === r.nome);
+      // fallback: varrer carros
+      let socIni=0, socFim=1, onboard= r.onboardKW;
+      carros.forEach(c=>{
+        const nomeC = document.getElementById('carroNome'+c.id)?.value||'Carro '+(c.id+1);
+        if(nomeC===r.nome){
+          socIni = clamp(num(document.getElementById('socIni'+c.id)?.value,20),0,100)/100;
+          socFim = clamp(num(document.getElementById('socFim'+c.id)?.value,100),0,100)/100;
+          onboard = num(document.getElementById('onboardKW'+c.id)?.value,7.4);
+        }
+      });
+      const factor = calcTaperFactor(socIni, socFim);
+      return {nome:r.nome, energy:r.E_bat*factor, onboard};
+    });
+    // Simulação de fila com 'chargers' pontos e potência FV compartilhada
+    let time=0;
+    const active=[]; // {nome, remaining, power}
+    const queue=[...jobs];
+    function startNext(){
+      while(active.length<chargers && queue.length){
+        active.push(queue.shift());
+      }
+    }
+    startNext();
+    function recomputePowers(){
+      const shareBase = totalPVPower/Math.max(1,active.length);
+      active.forEach(j=>{
+        j.power = Math.min(j.onboard, shareBase);
+      });
+    }
+    let safety=0; // evita loop infinito
+    while(active.length && safety<10000){
+      safety++;
+      recomputePowers();
+      // tempo até o próximo terminar
+      const times = active.map(j=> j.remaining / (j.power||1e-9));
+      const dt = Math.min(...times);
+      time += dt;
+      // reduzir energia
+      active.forEach(j=>{ j.remaining -= j.power*dt; });
+      // remover concluídos
+      for(let i=active.length-1;i>=0;i--){ if(active[i].remaining<=1e-6){ active.splice(i,1);} }
+      startNext();
+    }
+    const parallelTime = time; // horas
+    seqInfo.innerHTML = `Soma sequencial (1 carregador, sem taper): <b>${seqSumHoras.toFixed(2)} h</b><br>`+
+      `Tempo paralelo simulado (${chargers} carregador(es), taper e partilha PV): <b>${parallelTime.toFixed(2)} h</b>`;
+  } else if(wrapper){
+    wrapper.style.display='none';
+    if(tbody) tbody.innerHTML='';
+    if(seqInfo) seqInfo.textContent='';
+  }
+
+  const alertBox = document.getElementById('alerts');
+  const alertText = document.getElementById('alertText');
+  if (alerts.length){
+    alertBox.style.display = 'block';
+    alertText.innerHTML = '⚠️ ' + alerts.join('<br>');
+  }else{
+    alertBox.style.display = 'none';
+    alertText.innerHTML = '';
+  }
+
+  // Bloco de diagnóstico (lazy create para não poluir UI se não precisar)
+  let diag = document.getElementById('diagBlock');
+  if(!diag){
+    diag = document.createElement('details');
+    diag.id='diagBlock';
+    diag.style.marginTop='10px';
+    diag.innerHTML = `<summary style="cursor:pointer;color:var(--muted);font-size:12px;">Diagnóstico (intermediários)</summary><div id="diagInner" style="font-size:11px;line-height:1.35;color:var(--muted);margin-top:6px;"></div>`;
+    const resultsCol = document.querySelector('.results');
+    if(resultsCol) resultsCol.appendChild(diag);
+  }
+  const effOverall = E_pv_total>0 ? (E_bat_total / E_pv_total) : 0; // eficiência efetiva agregada
+  const diagInner = document.getElementById('diagInner');
+  if(diagInner){
+    diagInner.innerHTML = `kWp_total: <b>${kWp_total.toFixed(2)}</b><br>`+
+      `PR_ponderado: <b>${(pr_total*100).toFixed(2)}%</b><br>`+
+      `η_array_ponderado: <b>${(etaArr_total*100).toFixed(2)}%</b><br>`+
+      `Fator efetivo (PR×η): <b>${(eff_total*100).toFixed(2)}%</b><br>`+
+      `PSH_ponderado: <b>${psh_total.toFixed(2)} h</b><br>`+
+      `E_dia (geração): <b>${E_dia.toFixed(2)} kWh</b><br>`+
+      `E_bat_total: <b>${E_bat_total.toFixed(2)} kWh</b><br>`+
+      `E_PV_total (pré-perdas): <b>${E_pv_total.toFixed(2)} kWh</b><br>`+
+      `Eficiência efetiva agregada (E_bat/E_PV): <b>${(effOverall*100).toFixed(2)}%</b><br>`+
+      `Saldo: <b>${saldo>=0?'+':''}${saldo.toFixed(2)} kWh</b>`;
+  }
+
+  // Painel de passo a passo dos cálculos por carro
+  let calcSteps = document.getElementById('calcStepsBlock');
+  if(!calcSteps){
+    calcSteps = document.createElement('div');
+    calcSteps.id = 'calcStepsBlock';
+    calcSteps.style.marginTop = '18px';
+    calcSteps.style.fontSize = '13px';
+    calcSteps.style.color = 'var(--muted)';
+    calcSteps.style.background = 'var(--card)';
+    calcSteps.style.borderRadius = '14px';
+    calcSteps.style.padding = '18px 16px';
+    calcSteps.style.boxShadow = '0 4px 18px rgba(0,0,0,0.10)';
+    const resultsCol = document.querySelector('.results');
+    if(resultsCol) resultsCol.appendChild(calcSteps);
+  }
+  // Renderizar passo a passo para cada carro com fórmulas em HTML/CSS estilo LaTeX
+  let html = `<div style="font-size:15px;color:var(--accent);margin-bottom:10px;font-weight:600;">Passo a Passo dos Cálculos</div>`;
+  const formulaStyle = 'font-family:serif;font-size:1.25em;color:#ecf0ff;background:rgba(124,207,255,0.08);padding:6px 12px;border-radius:8px;display:inline-block;margin-bottom:4px;';
+  perCarRows.forEach((r, idx) => {
+    html += `<details style="margin-bottom:10px;background:rgba(255,255,255,0.04);border-radius:10px;padding:8px 10px;">
+      <summary style="font-size:14px;color:var(--accent);font-weight:600;cursor:pointer;">${r.nome}</summary>
+      <div style="margin-top:8px;">
+        <div style="margin-bottom:10px;">
+          <b>1. Energia útil na bateria (ΔSOC):</b><br>
+          <div style="${formulaStyle}">
+            E<sub>bat</sub> = C<sub>nom</sub> × %Utilizável × (SOC<sub>final</sub> − SOC<sub>inicial</sub>)
+          </div>
+          <div style="color:var(--accent);margin-top:2px;">E_bat = ${r.capNominal?.toFixed(2) ?? '—'} × ${(r.percUtil*100).toFixed(1)}% × (${(r.socFim*100).toFixed(1)}% − ${(r.socIni*100).toFixed(1)}%) = <b>${r.E_bat.toFixed(2)} kWh</b></div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <b>2. Energia FV bruta necessária:</b><br>
+          <div style="${formulaStyle}">
+            E<sub>PV</sub> = E<sub>bat</sub> / η<sub>global</sub>
+          </div>
+          <div style="color:var(--accent);margin-top:2px;">E_PV = ${r.E_bat.toFixed(2)} / ${(r.etaGlobal*100).toFixed(1)}% = <b>${r.E_pv.toFixed(2)} kWh</b></div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <b>3. Horas FV equivalentes:</b><br>
+          <div style="${formulaStyle}">
+            Horas FV eq. = E<sub>PV</sub> / (kWp<sub>total</sub> × PR<sub>médio</sub>)
+          </div>
+          <div style="color:var(--accent);margin-top:2px;">Horas FV eq. = ${r.E_pv.toFixed(2)} / (${kWp_total.toFixed(2)} × ${(pr_total*100).toFixed(1)}%) = <b>${r.horasFVeq?.toFixed(2) ?? '—'} h</b></div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <b>4. Tempo mínimo teórico:</b><br>
+          <div style="${formulaStyle}">
+            t<sub>min</sub> = E<sub>bat</sub> / min(P<sub>onboard</sub>, kWp<sub>total</sub> × PR<sub>médio</sub>)
+          </div>
+          <div style="color:var(--accent);margin-top:2px;">t_min = ${r.E_bat.toFixed(2)} / min(${r.onboardKW?.toFixed(2) ?? '—'}, ${(kWp_total*pr_total).toFixed(2)}) = <b>${r.t_lim?.toFixed(2) ?? '—'} h</b></div>
+        </div>
+      </div>
+    </details>`;
+  });
+  calcSteps.innerHTML = html;
+  if(debug) console.groupEnd();
+}
+
+function limpar(){
+  carros = [{id:0}];
+  placas = [{id:0}];
+  nextCarroId = 1;
+  nextPlacaId = 1;
+  renderCarros();
+  renderPlacas();
+  // limpa resultados
+  ['kpiEbat','kpiEpv','kpiEdia','kpiDias','kpiHoras','kpiTmin'].forEach(id=>{
+    document.getElementById(id).textContent = '—';
+  });
+  const kd=document.getElementById('kpiDeficit'); if(kd) kd.textContent='—';
+  const dn=document.getElementById('deficitNote'); if(dn) dn.textContent='—';
+  document.getElementById('alerts').style.display = 'none';
+  document.getElementById('alertText').textContent = '';
+}
+
+// Tooltip / Help system
+let currentHelpEl = null;
+function showHelp(evt, titulo, texto){
+  evt.stopPropagation();
+  // Fechar antigo
+  if(currentHelpEl){ currentHelpEl.remove(); currentHelpEl=null; }
+  const div = document.createElement('div');
+  div.className='help-pop';
+  div.innerHTML = `<button class="close-h" onclick="this.parentNode.remove();event.stopPropagation();">×</button><h5>${titulo}</h5>${texto}`;
+  document.body.appendChild(div);
+  const rect = evt.currentTarget.getBoundingClientRect();
+  const vw = window.innerWidth; const vh = window.innerHeight;
+  let top = rect.bottom + 8; let left = rect.left;
+  if(left + 300 > vw) left = vw - 300 - 12;
+  if(top + div.offsetHeight > vh) top = rect.top - div.offsetHeight - 8;
+  div.style.top = top + 'px';
+  div.style.left = left + 'px';
+  currentHelpEl = div;
+}
+document.addEventListener('click', (e)=>{
+  if(currentHelpEl && !currentHelpEl.contains(e.target) && !e.target.classList.contains('info-icon')){
+    currentHelpEl.remove(); currentHelpEl=null;
+  }
+});
+
+// Exportar / Importar JSON
+function exportarJSON(){
+  // Snapshot atual
+  const current = getConfigFromFields();
+  // Tudo salvo no localStorage
+  const evConfigs = JSON.parse(localStorage.getItem('evConfigs')||'{}');
+  const carModels = JSON.parse(localStorage.getItem('carModels')||'{}');
+  const placaModels = JSON.parse(localStorage.getItem('placaModels')||'{}');
+  const evLastConfig = localStorage.getItem('evLastConfig') || '';
+  const bundle = {
+    exportVersion: '1.1',
+    timestamp: new Date().toISOString(),
+    meta: current.meta,
+    current, // estado atual dos campos
+    evConfigs,
+    carModels,
+    placaModels,
+    evLastConfig
+  };
+  const blob = new Blob([JSON.stringify(bundle,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ev_solar_bundle.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+function importarJSON(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const obj = JSON.parse(e.target.result);
+      // Caso seja bundle completo
+      if(obj.evConfigs || obj.carModels || obj.placaModels || obj.current){
+        const existingConfigs = JSON.parse(localStorage.getItem('evConfigs')||'{}');
+        const incomingConfigs = obj.evConfigs || {};
+        let addedC=0, updatedC=0;
+        Object.keys(incomingConfigs).forEach(k=>{ if(!existingConfigs[k]) addedC++; else updatedC++; existingConfigs[k]=incomingConfigs[k]; });
+        localStorage.setItem('evConfigs', JSON.stringify(existingConfigs));
+
+        const existingCarModels = JSON.parse(localStorage.getItem('carModels')||'{}');
+        const incomingCarModels = obj.carModels || {};
+        let addedCar=0, updatedCar=0;
+  Object.keys(incomingCarModels).forEach(k=>{ if(!existingCarModels[k]) addedCar++; else updatedCar++; const m=incomingCarModels[k]; if(m){ if(m.percUtil>1) m.percUtil/=100; if(m.etaGlobal>1) m.etaGlobal/=100; } existingCarModels[k]=m; });
+        localStorage.setItem('carModels', JSON.stringify(existingCarModels));
+
+        const existingPlacaModels = JSON.parse(localStorage.getItem('placaModels')||'{}');
+        const incomingPlacaModels = obj.placaModels || {};
+        let addedPl=0, updatedPl=0;
+  Object.keys(incomingPlacaModels).forEach(k=>{ if(!existingPlacaModels[k]) addedPl++; else updatedPl++; const m=incomingPlacaModels[k]; if(m && m.pr>1) m.pr/=100; existingPlacaModels[k]=m; });
+        localStorage.setItem('placaModels', JSON.stringify(existingPlacaModels));
+
+        if(obj.evLastConfig){ localStorage.setItem('evLastConfig', obj.evLastConfig); }
+
+        // Aplicar estado atual se existir obj.current
+        if(obj.current && obj.current.carros && obj.current.placas){
+          carros = obj.current.carros.map((c,i)=>({...c,id:i, percUtil: c.percUtil>1?c.percUtil/100:c.percUtil, etaGlobal: c.etaGlobal>1?c.etaGlobal/100:c.etaGlobal}));
+          placas = obj.current.placas.map((p,i)=>({...p,id:i, pr: p.pr>1?p.pr/100:p.pr, etaArr: p.etaArr>1?p.etaArr/100 : (p.etaArr!=null? p.etaArr:1)}));
+          nextCarroId = carros.length;
+          nextPlacaId = placas.length;
+          renderCarros(true);
+          renderPlacas(true);
+          if(obj.current.meta){
+            const nc = document.getElementById('numChargers');
+            const tf = document.getElementById('taperFactorInput');
+            const tarifa = document.getElementById('tarifaInput');
+            const acm = document.getElementById('autoCalcMode');
+            if(nc && Number(obj.current.meta.numChargers)>0) nc.value = obj.current.meta.numChargers;
+            if(tf && Number(obj.current.meta.taperFactor)>0) tf.value = obj.current.meta.taperFactor;
+            if(tarifa && obj.current.meta.tarifa!=null) tarifa.value = obj.current.meta.tarifa;
+            if(acm && obj.current.meta.autoCalcMode) acm.value = obj.current.meta.autoCalcMode;
+          }
+        }
+        updateSavedConfigs();
+        updateSavedCarModels();
+        updateSavedPlacaModels();
+        calcular();
+        const fb = document.getElementById('configFeedback');
+        if(fb){
+          fb.style.display='block';
+          fb.style.color='var(--ok)';
+          fb.innerHTML = `Bundle importado. Configs +${addedC}/${updatedC} atualiz.; Carros modelo +${addedCar}/${updatedCar}; Placas modelo +${addedPl}/${updatedPl}.`;
+        } else {
+          alert('Bundle importado.');
+        }
+      } else if(obj.carros && obj.placas){
+        // fallback simples (apenas estado atual)
+        carros = obj.carros.map((c,i)=>({...c,id:i}));
+        placas = obj.placas.map((p,i)=>({...p,id:i}));
+        nextCarroId = carros.length;
+        nextPlacaId = placas.length;
+        renderCarros(true);
+        renderPlacas(true);
+        if(obj.meta){
+          const nc = document.getElementById('numChargers');
+          const tf = document.getElementById('taperFactorInput');
+          const tarifa = document.getElementById('tarifaInput');
+          const acm = document.getElementById('autoCalcMode');
+          if(nc && Number(obj.meta.numChargers)>0) nc.value = obj.meta.numChargers;
+          if(tf && Number(obj.meta.taperFactor)>0) tf.value = obj.meta.taperFactor;
+          if(tarifa && obj.meta.tarifa!=null) tarifa.value = obj.meta.tarifa;
+          if(acm && obj.meta.autoCalcMode) acm.value = obj.meta.autoCalcMode;
+        }
+        calcular();
+        const fb = document.getElementById('configFeedback');
+        if(fb){ fb.style.display='block'; fb.style.color='var(--ok)'; fb.textContent='Config importada.'; }
+      } else {
+        alert('Arquivo inválido.');
+      }
+    }catch(err){
+      alert('Erro ao importar: '+err.message);
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// Validação visual simples
+function validarCampos(){
+  let ok=true;
+  // Carros
+  carros.forEach(c=>{
+    const cap = document.getElementById('capNominal'+c.id);
+    const socI = document.getElementById('socIni'+c.id);
+    const socF = document.getElementById('socFim'+c.id);
+    const perc = document.getElementById('percUtil'+c.id);
+    [cap,socI,socF,perc].forEach(el=>{ if(el) el.classList.remove('invalid'); });
+    if(cap && (Number(cap.value)<=0)){cap.classList.add('invalid'); ok=false;}
+    if(socI && socF && Number(socF.value) <= Number(socI.value)){ socI.classList.add('invalid'); socF.classList.add('invalid'); ok=false; }
+    if(perc && (Number(perc.value)<=0 || Number(perc.value)>100)){ perc.classList.add('invalid'); ok=false; }
+  });
+  // Placas
+  placas.forEach(p=>{
+    const k = document.getElementById('kWp'+p.id);
+    const pr = document.getElementById('pr'+p.id);
+    const ps = document.getElementById('psh'+p.id);
+    [k,pr,ps].forEach(el=>{ if(el) el.classList.remove('invalid'); });
+    if(k && Number(k.value)<=0){ k.classList.add('invalid'); ok=false; }
+    if(pr && (Number(pr.value)<=0 || Number(pr.value)>100)){ pr.classList.add('invalid'); ok=false; }
+    if(ps && Number(ps.value)<=0){ ps.classList.add('invalid'); ok=false; }
+  });
+  return ok;
+}
+
+// Eventos
+document.getElementById('calcBtn').addEventListener('click', ()=>{ if(validarCampos()) calcular(); });
+document.getElementById('resetBtn').addEventListener('click', limpar);
+document.getElementById('saveConfigModalBtn').addEventListener('click', saveConfig);
+document.getElementById('loadConfigBtn').addEventListener('click', loadConfig);
+document.getElementById('deleteConfigBtn').addEventListener('click', deleteConfig);
+document.getElementById('saveCarModelBtn').addEventListener('click', saveCarModel);
+document.getElementById('loadCarModelBtn').addEventListener('click', loadCarModel);
+document.getElementById('savePlacaModelBtn').addEventListener('click', savePlacaModel);
+document.getElementById('loadPlacaModelBtn').addEventListener('click', loadPlacaModel);
+
+// Botão imprimir dinâmico
+const actionsEl=document.querySelector('.panel .actions');
+if(actionsEl && !document.getElementById('printBtn')){
+  const bp=document.createElement('button'); bp.id='printBtn'; bp.textContent='Imprimir'; bp.className='secondary'; bp.onclick=()=>window.print(); actionsEl.appendChild(bp);
+}
+
+// Auto-cálculo
+let _autoTimer=null;
+function scheduleAuto(){
+  const mode=document.getElementById('autoCalcMode')?.value||'manual';
+  if(mode!=='auto') return;
+  if(_autoTimer) clearTimeout(_autoTimer);
+  _autoTimer=setTimeout(()=>{ if(validarCampos()) calcular(); },420);
+}
+document.addEventListener('input', e=>{ if(e.target.classList.contains('field')) scheduleAuto(); });
+document.getElementById('autoCalcMode')?.addEventListener('change', e=>{ if(e.target.value==='auto'){ showToast('Auto-cálculo ativado'); scheduleAuto(); }});
+
+// Inicialização
+renderCarros(); // já cria Carro 1
+renderPlacas(); // já cria Placa 1
+updateSavedConfigs();
+updateSavedCarModels();
+updateSavedPlacaModels();
+initSaveModal();
+calcular();
+
+// UI dinâmica para campo de nome da configuração
+const cfgInput = document.getElementById('configNameInput');
+const cfgBtn = document.getElementById('saveConfigModalBtn');
+if(cfgInput && cfgBtn){
+  const feedback = document.getElementById('configFeedback');
+  const sync = ()=>{
+    const v = cfgInput.value.trim();
+    cfgBtn.disabled = !v;
+    if(feedback) feedback.style.display='none';
+  };
+  cfgInput.addEventListener('input', sync);
+  sync();
+}
+
+// Auto-carregar última configuração (se existir)
+const lastCfg = localStorage.getItem('evLastConfig');
+if(lastCfg){
+  // garantir que select foi populado
+  setTimeout(()=>{
+    const sel = document.getElementById('savedConfigs');
+    if(sel && sel.querySelector(`option[value="${lastCfg}"]`)){
+      sel.value = lastCfg;
+      loadConfig();
+    }
+  },150);
+}
+showToast('Pronto para usar.','ok',2600);
+
+// ===================== NOVA LÓGICA SIMULADOR =====================
+(function(){
+  const body=document.body;
+  const ddAdd=document.getElementById('addDropdown');
+  const addBtn=document.getElementById('addMenuBtn');
+  const diagBtn=document.getElementById('toggleDiagramBtn');
+  const diagPanel=document.getElementById('diagramPanel');
+  const closeDiag=document.getElementById('closeDiagramBtn');
+  const calcFast=document.getElementById('quickCalcBtn');
+  const clearFast=document.getElementById('quickClearBtn');
+  const themeBtn=document.getElementById('themeToggleBtn');
+  const exportBtn=document.getElementById('exportMenuBtn');
+  const exportDD=document.getElementById('exportDropdown');
+  const exportJsonToolbar=document.getElementById('exportJsonToolbar');
+  const importJsonToolbar=document.getElementById('importJsonToolbar');
+  const openSaveClone=document.getElementById('openSaveModalBtn_clone');
+  const openSaveOriginal=document.getElementById('openSaveModalBtn');
+
+  if(openSaveClone && openSaveOriginal){
+    openSaveClone.addEventListener('click',()=>openSaveOriginal.click());
+  }
+
+  function toggle(el){ el.classList.toggle('open'); }
+  function hide(el){ el && el.classList.remove('open'); }
+  if(addBtn){
+    addBtn.addEventListener('click',(e)=>{ e.stopPropagation(); toggle(ddAdd); hide(exportDD); });
+  }
+  if(exportBtn){
+    exportBtn.addEventListener('click',(e)=>{ e.stopPropagation(); toggle(exportDD); hide(ddAdd); });
+  }
+  document.addEventListener('click',()=>{ hide(ddAdd); hide(exportDD); });
+  ddAdd?.addEventListener('click',e=>{
+    if(e.target.matches('button[data-add]')){
+      const t=e.target.getAttribute('data-add');
+      if(t==='carro') adicionarCarro(); else if(t==='placa') adicionarPlaca();
+      hide(ddAdd); renderDiagram(); showToast((t==='carro'?'Carro':'Placa')+' adicionad'+(t==='carro'?'o':'a'),'ok',1800);
+    }
+  });
+  if(calcFast) calcFast.addEventListener('click',()=>{ if(validarCampos()) { calcular(); renderDiagram(); showToast('Recalculado','ok',1500);} });
+  if(clearFast) clearFast.addEventListener('click',()=>{ if(confirm('Limpar todos os dados?')){ limpar(); renderDiagram(); showToast('Limpou','warn',1500);} });
+  if(themeBtn){
+    themeBtn.addEventListener('click',()=>{
+      body.classList.toggle('sim-light');
+      localStorage.setItem('simTheme', body.classList.contains('sim-light')?'light':'dark');
+      renderDiagram();
+    });
+    // carregar preferencia
+    const pref = localStorage.getItem('simTheme');
+    if(pref==='light') body.classList.add('sim-light');
+  }
+  function openDiagram(){ diagPanel.classList.add('open'); diagPanel.setAttribute('aria-hidden','false'); renderDiagram(); }
+  function closeDiagram(){ diagPanel.classList.remove('open'); diagPanel.setAttribute('aria-hidden','true'); }
+  if(diagBtn) diagBtn.addEventListener('click',()=>{ diagPanel.classList.contains('open')?closeDiagram():openDiagram(); });
+  if(closeDiag) closeDiag.addEventListener('click',closeDiagram);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape' && diagPanel.classList.contains('open')) closeDiagram();
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='r'){ e.preventDefault(); if(validarCampos()) { calcular(); renderDiagram(); showToast('Recalculado','ok',1200);} }
+  });
+  if(exportJsonToolbar) exportJsonToolbar.addEventListener('click',()=>{ exportarJSON(); hide(exportDD); });
+  if(importJsonToolbar) importJsonToolbar.addEventListener('click',()=>{ document.getElementById('importFile').click(); hide(exportDD); });
+
+  // ------- Diagrama -------
+  const canvas=document.getElementById('diagramCanvas');
+  function el(tag, cls, html){ const d=document.createElement(tag); if(cls) d.className=cls; if(html!=null) d.innerHTML=html; return d; }
+  function buildNode(tipo, titulo, linhas){
+    const box=el('div','node-box '+tipo);
+    box.innerHTML = `<strong>${titulo||tipo}</strong>` + linhas.map(l=>`<div class="mini">${l}</div>`).join('');
+    return box;
+  }
+  function renderDiagram(){
+    if(!canvas) return;
+    canvas.innerHTML='';
+    if(!carros.length && !placas.length){ canvas.innerHTML='<div class="diagram-empty">Nada para mostrar ainda...</div>'; return; }
+    const grid=el('div','diagram-grid');
+    // Placas
+    const secPlacas=el('div');
+    secPlacas.appendChild(el('div','diag-section-title','Arrays Fotovoltaicos'));
+    const clusterPl=el('div','diag-cluster');
+    placas.forEach(p=>{
+      const kWp=num(document.getElementById('kWp'+p.id)?.value,p.kWp||0);
+      const prVal=num(document.getElementById('pr'+p.id)?.value,(p.pr||0)*100);
+      const psh=num(document.getElementById('psh'+p.id)?.value,p.psh||0);
+      const eta=num(document.getElementById('etaArr'+p.id)?.value,(p.etaArr||1)*100);
+      const nome=document.getElementById('placaNome'+p.id)?.value||('Placa '+(p.id+1));
+      const lines=[`kWp: ${kWp.toFixed(2)}`,`PR: ${prVal.toFixed(0)}%`, `η: ${eta.toFixed(0)}%`, `PSH: ${psh.toFixed(2)}h`];
+      clusterPl.appendChild(buildNode('placa',nome,lines));
+    });
+    secPlacas.appendChild(clusterPl); grid.appendChild(secPlacas);
+    // Conector
+    grid.appendChild(el('div','diag-connector'));
+    // Carros
+    const secCarros=el('div'); secCarros.appendChild(el('div','diag-section-title','Carros Elétricos'));
+    const clusterCar=el('div','diag-cluster');
+    carros.forEach(c=>{
+      const nome=document.getElementById('carroNome'+c.id)?.value||('Carro '+(c.id+1));
+      const cap=num(document.getElementById('capNominal'+c.id)?.value,c.capNominal||0);
+      const perc=num(document.getElementById('percUtil'+c.id)?.value,(c.percUtil||0.95)*100);
+      const socIni=num(document.getElementById('socIni'+c.id)?.value,c.socIni||0);
+      const socFim=num(document.getElementById('socFim'+c.id)?.value,c.socFim||100);
+      const onboard=num(document.getElementById('onboardKW'+c.id)?.value,c.onboardKW||0);
+      const lines=[`Cap: ${cap.toFixed(1)} kWh`,`Utiliz.: ${perc.toFixed(0)}%`,`SOC: ${socIni.toFixed(0)}→${socFim.toFixed(0)}%`,`Onboard: ${onboard} kW`];
+      clusterCar.appendChild(buildNode('carro',nome,lines));
+    });
+    secCarros.appendChild(clusterCar); grid.appendChild(secCarros);
+    canvas.appendChild(grid);
+  }
+  // Re-render após cálculos automáticos
+  const observer = new MutationObserver((m)=>{ if(diagPanel.classList.contains('open')) renderDiagram(); });
+  observer.observe(document.body,{subtree:true,characterData:false,childList:false,attributes:false});
+  // Primeira render
+  renderDiagram();
+})();
+// ===============================================================
+</script>
+</body>
+</html>
