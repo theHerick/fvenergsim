@@ -84,6 +84,48 @@
   .diagram-empty{font-size:12px;color:var(--muted);padding:10px 4px;}
   @media (max-width:800px){#diagramPanel{width:360px;}}
   /* ===================================================== */
+  /* ======= LOGISIM STYLE WORKBENCH (NOVO) ======= */
+  #workbench{position:relative;display:flex;height:calc(100vh - 78px);width:100%;max-width:100%;overflow:hidden;margin:0 auto;}
+  .wb-left{width:240px;min-width:200px;background:linear-gradient(180deg,var(--glass),transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-right:1px solid rgba(0,0,0,0.08);padding:14px 12px 18px;display:flex;flex-direction:column;gap:14px;overflow:auto;}
+  .wb-center{flex:1;position:relative;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.04) 0 22px,rgba(255,255,255,0.08) 22px 44px),radial-gradient(circle at 50% 50%,rgba(255,255,255,0.06),transparent 70%);border-right:1px solid rgba(0,0,0,0.08);}
+  .wb-right{width:340px;min-width:300px;background:linear-gradient(180deg,var(--glass),transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:14px 14px 24px;overflow:auto;display:flex;flex-direction:column;}
+  .wb-title{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin:0 0 4px 4px;}
+  .comp-item{background:var(--card);border:1px solid rgba(0,0,0,0.12);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;font-size:12px;cursor:pointer;position:relative;box-shadow:0 2px 8px -3px rgba(0,0,0,0.25);}
+  .comp-item:hover{border-color:var(--accent);}
+  .comp-item span{font-size:11px;opacity:.75;}
+  .comp-head{display:flex;align-items:center;justify-content:space-between;font-weight:600;color:var(--accent);font-size:12px;}
+  .comp-actions{display:flex;gap:6px;margin-top:2px;}
+  .comp-actions button{background:transparent;border:1px solid rgba(0,0,0,0.2);color:var(--text);padding:4px 8px;font-size:10px;border-radius:6px;cursor:pointer;}
+  .comp-actions button:hover{background:rgba(0,0,0,0.1);} 
+  #simCanvas{width:100%;height:100%;display:block;cursor:grab;}
+  .node{transition:filter .15s;}
+  .node rect{fill:var(--card);stroke:var(--accent);stroke-width:1.5px;rx:10;ry:10;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));}
+  .node.placa rect{stroke:#f59e0b;}
+  .node.carro rect{stroke:#2563eb;}
+  .node text{font-size:11px;font-family:ui-sans-serif,Arial;fill:var(--text);pointer-events:none;}
+  .node.dragging rect{stroke-dasharray:4 3;}
+  .bus-line{stroke:var(--accent-2);stroke-width:4;stroke-linecap:round;opacity:.55;}
+  .wire{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 4;opacity:.8;fill:none;}
+  .legend-box{position:absolute;bottom:10px;left:10px;background:var(--card);border:1px solid rgba(0,0,0,0.15);padding:6px 10px;border-radius:10px;font-size:10px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+  .legend-box b{font-size:10px;}
+  @media (max-width:1200px){ .wb-right{display:none;} #workbench{height:calc(100vh - 128px);} }
+  @media (max-width:900px){ .wb-left{width:180px;} }
+  @media (max-width:760px){ .wb-left{display:none;} }
+  body.wb-full .container{display:none!important;}
+  body.wb-full #workbench{display:flex;}
+  /* Large toolbar tweak */
+  .sim-toolbar.large{padding:14px 22px 16px;gap:24px;font-size:16px;}
+  .sim-toolbar.large .tb-btn{padding:12px 20px;font-size:14px;border-radius:14px;}
+  .sim-toolbar.large .sim-brand{font-size:20px;}
+  /* Modal editor */
+  #editorModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:90000;}
+  #editorModal.open{display:flex;}
+  #editorBox{width:min(640px,92vw);max-height:80vh;overflow:auto;background:var(--card);border:1px solid rgba(0,0,0,0.2);border-radius:20px;padding:24px 24px 30px;box-shadow:0 18px 60px -8px rgba(0,0,0,0.55);}
+  #editorBox h3{margin:0 0 12px;font-size:20px;color:var(--accent);}
+  #editorClose{position:absolute;top:8px;right:12px;background:transparent;border:none;color:var(--err);font-size:28px;cursor:pointer;}
+  .editor-fields .grid{grid-template-columns:1fr 1fr;}
+  @media (max-width:640px){ .editor-fields .grid{grid-template-columns:1fr;} }
+  /* =========================================== */
   h1{
     margin:0;
     font-size: clamp(28px, 4vw, 40px);
@@ -388,6 +430,46 @@
   <div id="carrosContainer"></div>
   <div style="display:flex; gap:8px; margin:6px 2px 14px; flex-wrap:wrap;">
     <button type="button" class="secondary" style="padding:8px 14px;font-size:12px;" onclick="adicionarCarro()">+ Adicionar Carro</button>
+  </div>
+
+  <!-- ================== NOVO WORKBENCH LOGISIM STYLE ================== -->
+  <div id="workbench" style="display:none;">
+    <div class="wb-left">
+      <div class="wb-title">Componentes</div>
+      <div id="wbCompList" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div class="wb-title" style="margin-top:8px;">Ações</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="tb-btn" id="wbAddCarBtn" style="width:100%;">+ Carro</button>
+        <button class="tb-btn" id="wbAddPlacaBtn" style="width:100%;">+ Placa</button>
+        <button class="tb-btn" id="wbEditSelBtn" style="width:100%;">✎ Editar Selecionado</button>
+        <button class="tb-btn" id="wbRemoveSelBtn" style="width:100%;">− Remover Selecionado</button>
+        <button class="tb-btn" id="wbSyncBtn" style="width:100%;">↺ Sincronizar</button>
+      </div>
+    </div>
+    <div class="wb-center" id="wbCanvasWrap">
+      <svg id="simCanvas"></svg>
+      <div class="legend-box" id="wbLegend"></div>
+    </div>
+    <div class="wb-right">
+      <div class="wb-title">Resultados</div>
+      <div id="wbResults" style="display:flex;flex-direction:column;gap:12px;font-size:12px;"></div>
+      <div class="wb-title" style="margin-top:10px;">Resumo PV</div>
+      <div id="wbPvResumo" style="font-size:11px;line-height:1.3;color:var(--muted);"></div>
+      <div class="wb-title" style="margin-top:10px;">Passos</div>
+      <div id="wbCalcPassos" style="font-size:10.5px;line-height:1.3;max-height:240px;overflow:auto;background:var(--card);border:1px solid rgba(0,0,0,0.15);padding:8px 10px;border-radius:10px;"></div>
+    </div>
+  </div>
+  <!-- Modal de edição simplificada -->
+  <div id="editorModal">
+    <div id="editorBox">
+      <button id="editorClose">×</button>
+      <h3 id="editorTitle">Editar</h3>
+      <div class="editor-fields" id="editorFields"></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+        <button class="tb-btn" id="editorSaveBtn">Salvar</button>
+        <button class="tb-btn" id="editorCancelBtn" style="background:transparent;border:1px solid rgba(0,0,0,0.25);">Cancelar</button>
+      </div>
+    </div>
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:14px;margin:10px 4px 22px;align-items:flex-start;">
     <div style="flex:1;min-width:180px;display:flex;flex-direction:column;">
@@ -2131,6 +2213,177 @@ updateCurveSummary();
   renderDiagram();
 })();
 // ===============================================================
+(function(){
+  // ===== Workbench Activation Toggle (reuse theme button long press or add key) =====
+  const body=document.body;
+  let wbMode = false;
+  function enterWorkbench(){ wbMode=true; body.classList.add('wb-full'); document.getElementById('workbench').style.display='flex'; document.querySelector('.sim-toolbar')?.classList.add('large'); renderWbAll(); }
+  function exitWorkbench(){ wbMode=false; body.classList.remove('wb-full'); document.getElementById('workbench').style.display='none'; document.querySelector('.sim-toolbar')?.classList.remove('large'); }
+  // Shortcut: Ctrl+Shift+W toggles
+  document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='w'){ e.preventDefault(); wbMode?exitWorkbench():enterWorkbench(); } });
+  // Long press brand to toggle
+  const brand=document.querySelector('.sim-brand');
+  if(brand){
+    let pressTimer=null;
+    brand.addEventListener('mousedown',()=>{ pressTimer=setTimeout(()=>{ wbMode?exitWorkbench():enterWorkbench(); },700); });
+    ['mouseup','mouseleave'].forEach(ev=>brand.addEventListener(ev,()=>{ if(pressTimer) clearTimeout(pressTimer); }));
+  }
+
+  // Data structures for node positions
+  const nodeState = { carros:{}, placas:{} };
+  function ensureNodeState(){ carros.forEach(c=>{ if(!nodeState.carros[c.id]) nodeState.carros[c.id]={x:120+ c.id*40, y:120 + c.id*40}; }); placas.forEach(p=>{ if(!nodeState.placas[p.id]) nodeState.placas[p.id]={x:520+ p.id*40, y:120 + p.id*40}; }); }
+
+  // Component list
+  function renderCompList(){
+    ensureNodeState();
+    const list=document.getElementById('wbCompList'); if(!list) return;
+    list.innerHTML='';
+    placas.forEach(p=>{
+      const nome=document.getElementById('placaNome'+p.id)?.value||('Placa '+(p.id+1));
+      const kWp=num(document.getElementById('kWp'+p.id)?.value,p.kWp||0);
+      const pr=num(document.getElementById('pr'+p.id)?.value,(p.pr||0)*100);
+      const div=document.createElement('div'); div.className='comp-item'; div.dataset.kind='placa'; div.dataset.id=p.id;
+      div.innerHTML=`<div class="comp-head">☀️ ${nome}<span>#${p.id}</span></div><span>${kWp.toFixed(2)} kWp  • PR ${pr.toFixed(0)}%</span>`;
+      list.appendChild(div);
+    });
+    carros.forEach(c=>{
+      const nome=document.getElementById('carroNome'+c.id)?.value||('Carro '+(c.id+1));
+      const cap=num(document.getElementById('capNominal'+c.id)?.value,c.capNominal||0);
+      const socI=num(document.getElementById('socIni'+c.id)?.value,c.socIni||0); const socF=num(document.getElementById('socFim'+c.id)?.value,c.socFim||100);
+      const div=document.createElement('div'); div.className='comp-item'; div.dataset.kind='carro'; div.dataset.id=c.id;
+      div.innerHTML=`<div class="comp-head">🚗 ${nome}<span>#${c.id}</span></div><span>${cap.toFixed(1)} kWh • ${socI}%→${socF}%</span>`;
+      list.appendChild(div);
+    });
+  }
+
+  // SVG rendering
+  function renderSvg(){
+    ensureNodeState();
+    const svg=document.getElementById('simCanvas'); if(!svg) return;
+    const w=svg.clientWidth||svg.parentElement.clientWidth; const h=svg.clientHeight||svg.parentElement.clientHeight;
+    svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+    // Clear
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    // Maybe central bus line
+    const bus=document.createElementNS('http://www.w3.org/2000/svg','line');
+    bus.setAttribute('x1',w/2); bus.setAttribute('x2',w/2); bus.setAttribute('y1',0); bus.setAttribute('y2',h); bus.setAttribute('class','bus-line'); svg.appendChild(bus);
+    // Helper to create node group
+    function makeNode(kind,id,label,lines){
+      const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.classList.add('node',kind); g.dataset.kind=kind; g.dataset.id=id;
+      const pos = nodeState[kind==='carro'?'carros':'placas'][id];
+      g.setAttribute('transform',`translate(${pos.x},${pos.y})`);
+      const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('width',140); rect.setAttribute('height',54 + lines.length*12); rect.setAttribute('rx',10); rect.setAttribute('ry',10); g.appendChild(rect);
+      const t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',10); t.setAttribute('y',18); t.textContent=label; g.appendChild(t);
+      lines.forEach((ln,i)=>{ const tx=document.createElementNS('http://www.w3.org/2000/svg','text'); tx.setAttribute('x',10); tx.setAttribute('y',34 + i*12); tx.textContent=ln; tx.setAttribute('opacity','.8'); g.appendChild(tx); });
+      svg.appendChild(g); return g;
+    }
+    // Placas left side
+    placas.forEach(p=>{
+      const nome=document.getElementById('placaNome'+p.id)?.value||('Placa '+(p.id+1));
+      const kWp=num(document.getElementById('kWp'+p.id)?.value,p.kWp||0);
+      const pr=num(document.getElementById('pr'+p.id)?.value,(p.pr||0)*100);
+      makeNode('placa',p.id,`☀️ ${nome}`,[`kWp ${kWp.toFixed(2)}`,`PR ${pr.toFixed(0)}%`]);
+    });
+    carros.forEach(c=>{
+      const nome=document.getElementById('carroNome'+c.id)?.value||('Carro '+(c.id+1));
+      const cap=num(document.getElementById('capNominal'+c.id)?.value,c.capNominal||0);
+      const socI=num(document.getElementById('socIni'+c.id)?.value,c.socIni||0); const socF=num(document.getElementById('socFim'+c.id)?.value,c.socFim||100);
+      const eta=num(document.getElementById('etaGlobal'+c.id)?.value,(c.etaGlobal||0.85)*100);
+      makeNode('carro',c.id,`🚗 ${nome}`,[`Cap ${cap.toFixed(1)} kWh`,`SOC ${socI}→${socF}%`,`η ${eta.toFixed?eta.toFixed(0):eta}%`]);
+    });
+  }
+
+  // Basic selection & dragging
+  let selected=null; let dragInfo=null;
+  function setSelected(kind,id){ selected={kind,id}; document.querySelectorAll('.node').forEach(n=>n.classList.remove('dragging')); }
+  document.addEventListener('mousedown',e=>{
+    const svgNode=e.target.closest && e.target.closest('.node');
+    if(svgNode){
+      const kind=svgNode.dataset.kind; const id=Number(svgNode.dataset.id);
+      setSelected(kind,id);
+      const pos=nodeState[kind==='carro'?'carros':'placas'][id];
+      const pt={x:e.clientX,y:e.clientY}; dragInfo={kind,id,startX:pos.x,startY:pos.y,pt}; svgNode.classList.add('dragging');
+    }
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragInfo) return; const dx=e.clientX-dragInfo.pt.x; const dy=e.clientY-dragInfo.pt.y; const bucket=nodeState[dragInfo.kind==='carro'?'carros':'placas'][dragInfo.id]; bucket.x=dragInfo.startX+dx; bucket.y=dragInfo.startY+dy; renderSvg();
+  });
+  document.addEventListener('mouseup',()=>{ dragInfo=null; document.querySelectorAll('.node.dragging').forEach(n=>n.classList.remove('dragging')); });
+
+  // Editor modal
+  const editorModal=document.getElementById('editorModal');
+  const editorFields=document.getElementById('editorFields');
+  function openEditor(){
+    if(!selected){ showToast('Selecione um componente','warn',1500); return; }
+    const {kind,id}=selected;
+    editorFields.innerHTML='';
+    let html='';
+    if(kind==='carro'){
+      html = `<div class="grid">\n<div><label>Nome</label><input class="field" id="edNome" value="${document.getElementById('carroNome'+id)?.value||''}"></div>\n<div><label>Capacidade (kWh)</label><input class="field" id="edCap" type="number" step="0.1" value="${document.getElementById('capNominal'+id)?.value||60}"></div>\n<div><label>SOC Inicial (%)</label><input class="field" id="edSocI" type="number" value="${document.getElementById('socIni'+id)?.value||20}"></div>\n<div><label>SOC Final (%)</label><input class="field" id="edSocF" type="number" value="${document.getElementById('socFim'+id)?.value||100}"></div>\n<div><label>Eficiência Global (%)</label><input class="field" id="edEta" type="number" value="${document.getElementById('etaGlobal'+id)?.value||85}"></div>\n<div><label>Onboard (kW)</label><input class="field" id="edOnboard" type="number" step="0.1" value="${document.getElementById('onboardKW'+id)?.value||7.4}"></div>\n</div>`;
+    }else{
+      html = `<div class="grid">\n<div><label>Nome</label><input class="field" id="edNome" value="${document.getElementById('placaNome'+id)?.value||''}"></div>\n<div><label>kWp</label><input class="field" id="edkWp" type="number" step="0.01" value="${document.getElementById('kWp'+id)?.value||2}"></div>\n<div><label>PR (%)</label><input class="field" id="edPR" type="number" value="${document.getElementById('pr'+id)?.value||75}"></div>\n<div><label>η array (%)</label><input class="field" id="edEtaArr" type="number" value="${document.getElementById('etaArr'+id)?.value||100}"></div>\n<div><label>PSH (h)</label><input class="field" id="edPSH" type="number" step="0.1" value="${document.getElementById('psh'+id)?.value||5}"></div>\n</div>`;
+    }
+    editorFields.innerHTML=html;
+    editorModal.classList.add('open');
+  }
+  function closeEditor(){ editorModal.classList.remove('open'); }
+  document.getElementById('editorClose').addEventListener('click',closeEditor);
+  document.getElementById('editorCancelBtn').addEventListener('click',closeEditor);
+  document.getElementById('wbEditSelBtn').addEventListener('click',openEditor);
+  document.getElementById('editorSaveBtn').addEventListener('click',()=>{
+    if(!selected) return; const {kind,id}=selected;
+    if(kind==='carro'){
+      document.getElementById('carroNome'+id).value=document.getElementById('edNome').value;
+      document.getElementById('capNominal'+id).value=document.getElementById('edCap').value;
+      document.getElementById('socIni'+id).value=document.getElementById('edSocI').value;
+      document.getElementById('socFim'+id).value=document.getElementById('edSocF').value;
+      document.getElementById('etaGlobal'+id).value=document.getElementById('edEta').value;
+      document.getElementById('onboardKW'+id).value=document.getElementById('edOnboard').value;
+    }else{
+      document.getElementById('placaNome'+id).value=document.getElementById('edNome').value;
+      document.getElementById('kWp'+id).value=document.getElementById('edkWp').value;
+      document.getElementById('pr'+id).value=document.getElementById('edPR').value;
+      document.getElementById('etaArr'+id).value=document.getElementById('edEtaArr').value;
+      document.getElementById('psh'+id).value=document.getElementById('edPSH').value;
+    }
+    closeEditor(); renderWbAll(); if(validarCampos()) calcular();
+  });
+
+  // Buttons add/remove
+  document.getElementById('wbAddCarBtn').addEventListener('click',()=>{ adicionarCarro(); renderWbAll(); });
+  document.getElementById('wbAddPlacaBtn').addEventListener('click',()=>{ adicionarPlaca(); renderWbAll(); });
+  document.getElementById('wbRemoveSelBtn').addEventListener('click',()=>{ if(!selected) return; if(selected.kind==='carro') removerCarro(selected.id); else removerPlaca(selected.id); selected=null; renderWbAll(); calcular(); });
+  document.getElementById('wbSyncBtn').addEventListener('click',()=>{ renderWbAll(); calcular(); showToast('Sincronizado','ok',1200); });
+
+  // Results side
+  function renderResultsPane(){
+    const pane=document.getElementById('wbResults'); if(!pane) return; pane.innerHTML='';
+    pane.innerHTML += `<div><b>E_bat:</b> ${document.getElementById('kpiEbat').textContent}</div>`;
+    pane.innerHTML += `<div><b>E_PV:</b> ${document.getElementById('kpiEpv').textContent}</div>`;
+    pane.innerHTML += `<div><b>Geração/dia:</b> ${document.getElementById('kpiEdia').textContent}</div>`;
+    pane.innerHTML += `<div><b>Dias:</b> ${document.getElementById('kpiDias').textContent}</div>`;
+    pane.innerHTML += `<div><b>Horas Eq:</b> ${document.getElementById('kpiHoras').textContent}</div>`;
+    pane.innerHTML += `<div><b>t_min:</b> ${document.getElementById('kpiTmin').textContent}</div>`;
+    pane.innerHTML += `<div><b>Saldo:</b> ${document.getElementById('kpiDeficit').textContent}</div>`;
+    const pvResumo=document.getElementById('wbPvResumo');
+    if(pvResumo){
+      if(window._pvCurveData){ pvResumo.innerHTML=`Curva ativa: ${window._pvCurveData.energyKWhAdj.toFixed(2)} kWh/d (pico ${window._pvCurveData.peakKW.toFixed(2)} kW)`; }
+      else pvResumo.innerHTML=`kWp Total (aprox.): ${[...placas].reduce((s,p)=>s+num(document.getElementById('kWp'+p.id)?.value,p.kWp||0),0).toFixed(2)} kWp`;
+    }
+  }
+
+  function renderCalcPassos(){
+    const box=document.getElementById('wbCalcPassos'); if(!box) return;
+    // reutilizar diagInner se existe
+    const diagInner=document.getElementById('diagInner');
+    box.innerHTML = diagInner? diagInner.innerHTML.replace(/<br>/g,'\n') : 'Calcule para ver passos.';
+  }
+
+  function renderWbAll(){ if(!wbMode) return; renderCompList(); renderSvg(); renderResultsPane(); renderCalcPassos(); }
+  window.renderWbAll = renderWbAll;
+  // Hook recalculation to update workbench
+  const origCalc=calcular; calcular=function(){ origCalc(); renderWbAll(); };
+})();
 </script>
 </body>
 </html>
